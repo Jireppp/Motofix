@@ -1,0 +1,39 @@
+{
+  "expo": {
+    "name": "Cek Motor",
+    "slug": "cek-motor",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "dark",
+    "newArchEnabled": false,
+    "splash": {
+      "image": "./assets/splash-icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#0F172A"
+    },
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.fikri.cekmotor"
+    },
+    "android": {
+      "package": "com.fikri.cekmotor",
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#0F172A"
+      }
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
+    },
+    "extra": {
+      "eas": {
+        "projectId": "388cb9a8-b9a5-4eea-a202-a997f07b5f4f"
+      }
+    },
+    "plugins": [
+      "@react-native-google-signin/google-signin",
+      "expo-font"
+    ]
+  }
+}
