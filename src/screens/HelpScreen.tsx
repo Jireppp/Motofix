@@ -4,9 +4,10 @@ import {
   View, Text, TouchableOpacity, StyleSheet, ScrollView, ActivityIndicator, Alert
 } from 'react-native';
 import { COLORS, SPACING, FONT_SIZE, BORDER_RADIUS, LABEL_STYLE, FONT_FAMILY, SHADOWS } from '../constants/theme';
-import { ChevronLeft, Info, AlertTriangle, CheckCircle, User, Mail } from 'lucide-react-native';
+import { ChevronLeft, Info, AlertTriangle, CheckCircle, User, Mail, LogOut } from 'lucide-react-native';
 import { supabase } from '../lib/supabase';
 import { authService } from '../services/authService';
+import { haptic } from '../utils/haptics';
 
 // Hallmark - genre: modern-minimal - macrostructure: Long Document - design-system: none - designed-as-app
 // Structural fingerprint: Hanging heading, Single column, Hairline dividers, Typographic-only buttons
@@ -16,10 +17,10 @@ interface HelpScreenProps {
 }
 
 const STEPS = [
-  { step: 1, title: 'REGISTER VEHICLE', description: 'Tambahkan motor Anda di halaman GARAGE dengan mengisi nama dan plat nomor.' },
-  { step: 2, title: 'TRACK SPAREPARTS', description: 'Masuk ke detail kendaraan dan tambahkan sparepart yang ingin dipantau.' },
-  { step: 3, title: 'UPDATE ODOMETER', description: 'Perbarui ODOMETER secara berkala agar sisa KM sparepart selalu akurat.' },
-  { step: 4, title: 'LOG REPLACEMENTS', description: 'Saat servis, catat penggantian (LOG REPLACEMENT) agar interval kembali direset.' },
+  { step: 1, title: 'REGISTER VEHICLE', description: 'Add your motorcycle in the GARAGE tab by entering the model name and registration plate.' },
+  { step: 2, title: 'TRACK SPARE PARTS', description: 'Open the vehicle dashboard and select which components to track with custom service intervals.' },
+  { step: 3, title: 'UPDATE ODOMETER', description: 'Log your current odometer reading regularly so remaining distance forecasts stay accurate.' },
+  { step: 4, title: 'LOG REPLACEMENTS', description: 'Whenever a part is serviced or swapped, record a replacement log to reset its service cycle.' },
 ];
 
 export default function HelpScreen({ onGoBack }: HelpScreenProps) {
@@ -45,7 +46,6 @@ export default function HelpScreen({ onGoBack }: HelpScreenProps) {
         setUserEmail(null);
       } else {
         setIsGuest(false);
-        // Supabase user_metadata might have the real google email, or fallback to session email
         const googleEmail = session.user.user_metadata?.email || session.user.email;
         setUserEmail(googleEmail);
       }
@@ -56,14 +56,17 @@ export default function HelpScreen({ onGoBack }: HelpScreenProps) {
   };
 
   const handleGoogleLogin = async () => {
+    haptic.medium();
     setLoadingAuth(true);
     try {
       const userInfo = await authService.signInWithGoogle();
       if (userInfo) {
         setIsGuest(false);
+        haptic.success();
         checkUser();
       }
     } catch (error: any) {
+      haptic.warning();
       Alert.alert('Login Failed', error.message || 'Could not sign in with Google');
     } finally {
       setLoadingAuth(false);
@@ -71,12 +74,15 @@ export default function HelpScreen({ onGoBack }: HelpScreenProps) {
   };
 
   const handleLogout = async () => {
+    haptic.warning();
     setLoadingAuth(true);
     try {
       await authService.signOut();
       await authService.signInAsGuest();
+      haptic.success();
       checkUser();
     } catch (error: any) {
+      haptic.warning();
       Alert.alert('Logout Failed', error.message || 'Could not log out');
     } finally {
       setLoadingAuth(false);
@@ -86,8 +92,14 @@ export default function HelpScreen({ onGoBack }: HelpScreenProps) {
   return (
     <View style={styles.container}>
       <View style={styles.topNav}>
-        <TouchableOpacity onPress={onGoBack} hitSlop={{ top: 20, bottom: 20, left: 20, right: 20 }}>
-          <Text style={styles.navLink}>← Back to Index</Text>
+        <TouchableOpacity
+          onPress={() => {
+            haptic.light();
+            onGoBack();
+          }}
+          hitSlop={{ top: 20, bottom: 20, left: 20, right: 20 }}
+        >
+          <Text style={styles.navLink}>← Back to Garage</Text>
         </TouchableOpacity>
       </View>
 
@@ -151,11 +163,20 @@ export default function HelpScreen({ onGoBack }: HelpScreenProps) {
                 <Text style={styles.pText}>
                   The system is currently operating in local persistence mode (GUEST). To synchronize telemetry across fleet terminals and prevent data volatility, bind a permanent Google credential.
                 </Text>
-                <TouchableOpacity onPress={handleGoogleLogin} disabled={loadingAuth} style={styles.textBtn} hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}>
+                <TouchableOpacity
+                  onPress={handleGoogleLogin}
+                  disabled={loadingAuth}
+                  style={styles.primaryAuthBtn}
+                  activeOpacity={0.8}
+                  hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                >
                   {loadingAuth ? (
-                    <ActivityIndicator color={COLORS.primary} size="small" />
+                    <ActivityIndicator color={COLORS.bg} size="small" />
                   ) : (
-                    <Text style={styles.textBtnLabel}>[ Authenticate with Google ]</Text>
+                    <>
+                      <User size={16} color={COLORS.bg} strokeWidth={2} />
+                      <Text style={styles.primaryAuthBtnText}>Authenticate with Google</Text>
+                    </>
                   )}
                 </TouchableOpacity>
               </View>
@@ -170,11 +191,20 @@ export default function HelpScreen({ onGoBack }: HelpScreenProps) {
                     <Text style={styles.calloutText}>{userEmail}</Text>
                   </View>
                 </View>
-                <TouchableOpacity onPress={handleLogout} disabled={loadingAuth} style={styles.textBtn} hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}>
+                <TouchableOpacity
+                  onPress={handleLogout}
+                  disabled={loadingAuth}
+                  style={styles.signoutBtn}
+                  activeOpacity={0.7}
+                  hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                >
                   {loadingAuth ? (
                     <ActivityIndicator color={COLORS.danger} size="small" />
                   ) : (
-                    <Text style={[styles.textBtnLabel, { color: COLORS.danger }]}>[ Sign Out ]</Text>
+                    <>
+                      <LogOut size={15} color={COLORS.danger} strokeWidth={2} />
+                      <Text style={styles.signoutBtnText}>Sign Out</Text>
+                    </>
                   )}
                 </TouchableOpacity>
               </View>
@@ -228,8 +258,45 @@ const getStyles = (COLORS: any) => StyleSheet.create({
   calloutTitle: { fontFamily: FONT_FAMILY.mono, fontSize: 12, color: COLORS.textPrimary, marginBottom: 4, letterSpacing: 0.5 },
   calloutText: { fontFamily: FONT_FAMILY.body, fontSize: 13, color: COLORS.textSecondary, lineHeight: 20 },
 
-  textBtn: { marginTop: 16, alignSelf: 'flex-start' },
-  textBtnLabel: { fontFamily: FONT_FAMILY.mono, fontSize: 13, color: COLORS.primary },
+  primaryAuthBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginTop: 18,
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+    borderRadius: 8,
+    backgroundColor: COLORS.textPrimary,
+    alignSelf: 'flex-start',
+  },
+  primaryAuthBtnText: {
+    fontFamily: FONT_FAMILY.mono,
+    fontSize: 12,
+    fontWeight: '700',
+    color: COLORS.bg,
+    letterSpacing: 0.5,
+  },
+
+  signoutBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 7,
+    marginTop: 18,
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: COLORS.danger + '50',
+    alignSelf: 'flex-start',
+    backgroundColor: COLORS.dangerContainer + '20',
+  },
+  signoutBtnText: {
+    fontFamily: FONT_FAMILY.mono,
+    fontSize: 12,
+    fontWeight: '600',
+    color: COLORS.danger,
+    letterSpacing: 0.5,
+  },
 
   identityBound: {
     flexDirection: 'row', borderLeftWidth: 1, borderLeftColor: COLORS.success, paddingLeft: 16,

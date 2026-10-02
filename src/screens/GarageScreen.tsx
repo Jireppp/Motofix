@@ -9,6 +9,7 @@ import { getBrandImage, THEME_ICONS } from '../constants/assets';
 import { UserVehicle, MasterBrand } from '../types';
 import { vehicleService } from '../services/vehicleService';
 import { HelpCircle, Edit2, Plus, X, Sun, Moon, Monitor, ChevronRight } from 'lucide-react-native';
+import { haptic } from '../utils/haptics';
 
 // Hallmark - genre: modern-minimal - macrostructure: Index-First - design-system: none - designed-as-app
 // Structural fingerprint: Inline heading, Full-bleed rows, Hairline dividers, Typographic-only buttons
@@ -44,11 +45,12 @@ export default function GarageScreen({ onSelectVehicle, onAddVehicle, onHelp, re
     try {
       const data = await vehicleService.getVehicles();
       setVehicles(data);
-    } catch { Alert.alert('Error', 'Gagal memuat data kendaraan.'); }
+    } catch { Alert.alert('Error', 'Failed to load vehicle data.'); }
     finally { setLoading(false); }
   };
 
   const openEditModal = async (vehicle: UserVehicle) => {
+    haptic.light();
     setEditVehicle(vehicle);
     setEditName(vehicle.vehicle_name);
     setEditPlate(vehicle.plate_number || '');
@@ -60,24 +62,36 @@ export default function GarageScreen({ onSelectVehicle, onAddVehicle, onHelp, re
 
   const handleSaveEdit = async () => {
     if (!editVehicle) return;
-    if (!editName.trim()) { Alert.alert('Error', 'Masukkan nama kendaraan.'); return; }
-    if (!editBrandId) { Alert.alert('Error', 'Pilih merek kendaraan.'); return; }
+    if (!editName.trim()) { haptic.warning(); Alert.alert('Error', 'Please enter vehicle name.'); return; }
+    if (!editBrandId) { haptic.warning(); Alert.alert('Error', 'Please select vehicle manufacturer.'); return; }
     setSavingEdit(true);
     try {
       await vehicleService.updateVehicle(editVehicle.id, editBrandId, editName.trim(), editPlate.trim());
+      haptic.success();
       setEditVehicle(null);
       loadVehicles();
-    } catch { Alert.alert('Error', 'Gagal menyimpan perubahan.'); }
-    finally { setSavingEdit(false); }
+    } catch {
+      haptic.warning();
+      Alert.alert('Error', 'Failed to save changes.');
+    } finally {
+      setSavingEdit(false);
+    }
   };
 
   const handleDeleteVehicle = (vehicle: UserVehicle) => {
-    Alert.alert('Hapus Kendaraan', 'Hapus kendaraan ini? Semua data sparepart dan riwayat akan dihapus.',
-      [{ text: 'Batal', style: 'cancel' }, {
-        text: 'Hapus', style: 'destructive',
+    haptic.warning();
+    Alert.alert('Delete Vehicle', 'Are you sure you want to delete this vehicle? All tracked parts and service logs will be permanently deleted.',
+      [{ text: 'Cancel', style: 'cancel' }, {
+        text: 'Delete', style: 'destructive',
         onPress: async () => {
-          try { await vehicleService.deleteVehicle(vehicle.id); loadVehicles(); }
-          catch { Alert.alert('Error', 'Gagal menghapus kendaraan.'); }
+          try {
+            await vehicleService.deleteVehicle(vehicle.id);
+            haptic.success();
+            loadVehicles();
+          } catch {
+            haptic.warning();
+            Alert.alert('Error', 'Failed to delete vehicle.');
+          }
         },
       }]
     );
@@ -97,7 +111,10 @@ export default function GarageScreen({ onSelectVehicle, onAddVehicle, onHelp, re
     return (
       <TouchableOpacity
         style={styles.indexRow}
-        onPress={() => onSelectVehicle(item)}
+        onPress={() => {
+          haptic.light();
+          onSelectVehicle(item);
+        }}
         activeOpacity={0.6}
       >
         <View style={styles.irBrandCol}>
@@ -127,12 +144,25 @@ export default function GarageScreen({ onSelectVehicle, onAddVehicle, onHelp, re
     <View style={styles.container}>
       {/* Index Header */}
       <View style={styles.indexHeader}>
-        <Text style={styles.indexTitle}>Index // Garage</Text>
+        <Text style={styles.indexTitle}>Garage // Vehicles</Text>
         <View style={styles.ihActions}>
-          <TouchableOpacity onPress={() => setShowThemePicker(true)} hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}>
+          <TouchableOpacity
+            onPress={() => {
+              haptic.selection();
+              setShowThemePicker(true);
+            }}
+            hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+          >
             <Sun size={18} color={COLORS.textSecondary} strokeWidth={2} />
           </TouchableOpacity>
-          <TouchableOpacity onPress={onHelp} hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }} style={{ marginLeft: 16 }}>
+          <TouchableOpacity
+            onPress={() => {
+              haptic.light();
+              onHelp();
+            }}
+            hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+            style={{ marginLeft: 16 }}
+          >
             <HelpCircle size={18} color={COLORS.textSecondary} strokeWidth={2} />
           </TouchableOpacity>
         </View>
@@ -155,7 +185,13 @@ export default function GarageScreen({ onSelectVehicle, onAddVehicle, onHelp, re
         contentContainerStyle={styles.listContent}
         renderItem={renderVehicleRow}
         ListFooterComponent={
-          <TouchableOpacity style={styles.addInlineRow} onPress={onAddVehicle}>
+          <TouchableOpacity
+            style={styles.addInlineRow}
+            onPress={() => {
+              haptic.light();
+              onAddVehicle();
+            }}
+          >
             <Plus size={16} color={COLORS.textSecondary} strokeWidth={2} />
             <Text style={styles.addInlineText}>Register new vehicle</Text>
           </TouchableOpacity>
@@ -270,7 +306,7 @@ const getStyles = (COLORS: any) => StyleSheet.create({
 
   indexHeader: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-    paddingHorizontal: 24, paddingTop: 64, paddingBottom: 24,
+    paddingHorizontal: 24, paddingTop: 16, paddingBottom: 24,
   },
   indexTitle: { fontFamily: FONT_FAMILY.mono, fontSize: 14, color: COLORS.textPrimary, textTransform: 'uppercase', letterSpacing: 1 },
   ihActions: { flexDirection: 'row', alignItems: 'center' },

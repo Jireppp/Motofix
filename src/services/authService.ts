@@ -43,7 +43,7 @@ export const authService = {
   async signInWithGoogle() {
     try {
       GoogleSignin.configure({
-        webClientId: '398194611155-kj0rorqap9vkdd0buu5rt4erpv073iui.apps.googleusercontent.com',
+        webClientId: process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID || '398194611155-kj0rorqap9vkdd0buu5rt4erpv073iui.apps.googleusercontent.com',
       });
       await GoogleSignin.hasPlayServices();
       const userInfo = await GoogleSignin.signIn();

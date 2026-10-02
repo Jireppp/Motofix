@@ -92,7 +92,7 @@ export const sparepartService = {
       .single();
 
     if (masterError) {
-      if (masterError.code === '23505') throw new Error('Sparepart dengan nama ini sudah ada di master data.');
+      if (masterError.code === '23505') throw new Error('A spare part with this name already exists in the catalog.');
       throw masterError;
     }
 

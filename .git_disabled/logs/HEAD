@@ -1,9 +1,0 @@
-0000000000000000000000000000000000000000 50b6170353395d8d3f58de19a59596cb0b60ec04 Nama Kamu <email@kamu.com> 1774837963 +0700	commit (initial): Initial commit
-50b6170353395d8d3f58de19a59596cb0b60ec04 ed76f174ee12728e52def642b5838d86ef167979 Nama Kamu <email@kamu.com> 1774845161 +0700	commit: feat: implement core vehicle and sparepart tracking services with Supabase integration
-ed76f174ee12728e52def642b5838d86ef167979 cdb5147a50873dd5cb1d598f8d7345c5a53d1af0 Nama Kamu <email@kamu.com> 1774855123 +0700	commit: feat: implement home and vehicle management screens with sparepart tracking functionality
-cdb5147a50873dd5cb1d598f8d7345c5a53d1af0 97cc009db9460948ee2abbbb96ab92a35e064396 Nama Kamu <email@kamu.com> 1775017286 +0700	commit: feat: implement vehicle management features including Garage, Home, and Workshop screens with CRUD capabilities.
-97cc009db9460948ee2abbbb96ab92a35e064396 a643a6f3096614cb1181215eac7620874f954893 Nama Kamu <email@kamu.com> 1775028366 +0700	commit: feat: add WorkshopScreen to enable location-based workshop search via Google Maps
-a643a6f3096614cb1181215eac7620874f954893 623194c140487caa6f2f6b248d467fa54622ee80 Nama Kamu <email@kamu.com> 1775028379 +0700	pull --tags origin master: Merge made by the 'ort' strategy.
-623194c140487caa6f2f6b248d467fa54622ee80 623194c140487caa6f2f6b248d467fa54622ee80 Nama Kamu <email@kamu.com> 1775028410 +0700	checkout: moving from master to Coba
-623194c140487caa6f2f6b248d467fa54622ee80 623194c140487caa6f2f6b248d467fa54622ee80 Nama Kamu <email@kamu.com> 1775123174 +0700	checkout: moving from Coba to master
-623194c140487caa6f2f6b248d467fa54622ee80 d317d7c94cfa45bee00efb04c7b3dd48a3b2c1ed Nama Kamu <email@kamu.com> 1775456034 +0700	commit: feat: implement core vehicle management screens and UI components

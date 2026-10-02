@@ -54,16 +54,16 @@ export function validateKmInput(
   lastKm: number
 ): string | null {
   if (newKm === null || isNaN(newKm)) {
-    return 'Masukkan angka KM kendaraan Anda.';
+    return 'Please enter your vehicle odometer reading.';
   }
   if (newKm < 0) {
-    return 'KM harus berupa angka positif.';
+    return 'Odometer must be a positive number.';
   }
   if (newKm < lastKm) {
-    return `KM tidak boleh lebih kecil dari KM sebelumnya (${lastKm} KM).`;
+    return `Odometer cannot be less than previous reading (${lastKm.toLocaleString()} KM).`;
   }
   if (newKm > 999999) {
-    return 'Angka KM tidak valid. Periksa kembali.';
+    return 'Invalid odometer value. Please verify.';
   }
   return null;
 }

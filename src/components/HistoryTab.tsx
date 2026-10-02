@@ -3,15 +3,16 @@ import { useTheme } from '../contexts/ThemeContext';
 import {
   View,
   Text,
-  FlatList,
   StyleSheet,
   ActivityIndicator,
   TouchableOpacity,
-  Image,
 } from 'react-native';
-import { COLORS, SPACING, FONT_SIZE, BORDER_RADIUS, FONT_FAMILY } from '../constants/theme';
+import { COLORS, FONT_FAMILY } from '../constants/theme';
 import { sparepartService } from '../services/sparepartService';
-import { getSparepartIcon } from '../constants/assets';
+import { History } from 'lucide-react-native';
+
+// Hallmark - genre: modern-minimal - macrostructure: Index-First - design-system: none - designed-as-app
+// Structural fingerprint: Full-bleed rows, Hairline dividers, Monospace telemetry, Typographic actions
 
 interface HistoryTabProps {
   vehicleId: string;
@@ -70,197 +71,199 @@ export default function HistoryTab({ vehicleId, refreshKey }: HistoryTabProps) {
   };
 
   const formatDate = (dateStr: string) => {
-    const d = new Date(dateStr);
-    return d.toLocaleDateString('id-ID', {
-      day: 'numeric',
-      month: 'short',
-      year: 'numeric',
-    });
+    try {
+      const d = new Date(dateStr);
+      return d.toLocaleDateString('en-US', {
+        day: 'numeric',
+        month: 'short',
+        year: 'numeric',
+      });
+    } catch {
+      return dateStr;
+    }
   };
 
-  const renderHistoryCard = ({ item }: { item: HistoryItem }) => (
-    <View style={styles.card}>
-      <View style={styles.cardHeader}>
-        <View style={styles.iconBox}>
-          <Text style={{ fontSize: 16 }}>🔧</Text>
-        </View>
-        <View style={styles.cardTitleSection}>
-          <Text style={styles.sparepartName}>{item.sparepart_name.toUpperCase()}</Text>
-          <Text style={styles.dateText}>{formatDate(item.replaced_at).toUpperCase()}</Text>
-        </View>
-      </View>
-      <View style={styles.cardBody}>
-        <View style={styles.detailRow}>
-          <Text style={styles.detailLabel}>BRAND</Text>
-          <Text style={styles.detailValue}>{item.brand_name.toUpperCase()}</Text>
-        </View>
-        <View style={styles.detailRow}>
-          <Text style={styles.detailLabel}>ODOMETER AT REPLACE</Text>
-          <Text style={styles.detailValueBold}>
-            {item.km_at_replacement.toLocaleString()} KM
+  const renderHistoryRow = (item: HistoryItem) => (
+    <View key={item.id} style={styles.historyRow}>
+      <View style={styles.mainCol}>
+        <Text style={styles.partName} numberOfLines={1}>
+          {item.sparepart_name}
+        </Text>
+        <View style={styles.metaRow}>
+          <Text style={styles.metaDate}>
+            {formatDate(item.replaced_at).toUpperCase()}
+          </Text>
+          <Text style={styles.metaDivider}>·</Text>
+          <Text style={styles.brandTag}>
+            BRAND // {item.brand_name ? item.brand_name.toUpperCase() : 'OEM'}
           </Text>
         </View>
         {item.cost > 0 && (
-          <View style={styles.detailRow}>
-            <Text style={styles.detailLabel}>SERVICE COST</Text>
-            <Text style={styles.detailValueBold}>
-              Rp {item.cost.toLocaleString('id-ID')}
-            </Text>
-          </View>
+          <Text style={styles.costText}>
+            EXPENSE // Rp {item.cost.toLocaleString('id-ID')}
+          </Text>
         )}
+      </View>
+
+      <View style={styles.statCol}>
+        <Text style={styles.odoStat}>
+          {item.km_at_replacement.toLocaleString()}
+        </Text>
+        <Text style={styles.odoLabel}>AT SERVICE</Text>
       </View>
     </View>
   );
 
   if (loading) {
     return (
-      <View style={styles.centerContainer}>
-        <ActivityIndicator size="large" color={COLORS.primary} />
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator size="small" color={COLORS.primary} />
+      </View>
+    );
+  }
+
+  if (history.length === 0) {
+    return (
+      <View style={styles.emptyState}>
+        <History size={26} color={COLORS.textTertiary} strokeWidth={1.5} />
+        <Text style={styles.emptyTitle}>0 SERVICE LOGS RECORDED</Text>
+        <Text style={styles.emptySubtitle}>
+          Maintenance and replacement records will appear here chronologically.
+        </Text>
       </View>
     );
   }
 
   return (
-    <FlatList
-      data={history}
-      keyExtractor={(item) => item.id}
-      renderItem={renderHistoryCard}
-      contentContainerStyle={styles.listContent}
-      onEndReached={loadMore}
-      onEndReachedThreshold={0.5}
-      ListFooterComponent={
-        loadingMore ? (
-          <ActivityIndicator color={COLORS.primary} style={{ padding: SPACING.md }} />
-        ) : hasMore && history.length > 0 ? (
-          <TouchableOpacity style={styles.loadMoreButton} onPress={loadMore}>
-            <Text style={styles.loadMoreText}>LOAD MORE ENTRIES...</Text>
-          </TouchableOpacity>
-        ) : null
-      }
-      ListEmptyComponent={
-        <View style={styles.emptyState}>
-          <View style={styles.ring}><Text style={styles.emptyIcon}>📋</Text></View>
-          <Text style={styles.emptyTitle}>NO LOGS FOUND</Text>
-          <Text style={styles.emptySubtitle}>
-            Replacement history will appear here once you log a part replacement.
-          </Text>
-        </View>
-      }
-    />
+    <View style={styles.container}>
+      {history.map(renderHistoryRow)}
+
+      {hasMore && (
+        <TouchableOpacity
+          style={styles.loadMoreBtn}
+          onPress={loadMore}
+          disabled={loadingMore}
+          activeOpacity={0.7}
+        >
+          {loadingMore ? (
+            <ActivityIndicator size="small" color={COLORS.primary} />
+          ) : (
+            <Text style={styles.loadMoreText}>[ Load Older Entries ]</Text>
+          )}
+        </TouchableOpacity>
+      )}
+    </View>
   );
 }
 
 const getStyles = (COLORS: any) => StyleSheet.create({
-  centerContainer: {
-    flex: 1,
-    justifyContent: 'center',
+  container: {
+    width: '100%',
+  },
+  loadingContainer: {
+    paddingVertical: 48,
     alignItems: 'center',
-    paddingTop: SPACING.xxl,
+    justifyContent: 'center',
   },
-  listContent: {
-    paddingTop: 16,
-    paddingBottom: 40,
-  },
-  card: {
-    backgroundColor: COLORS.surface1,
-    borderRadius: BORDER_RADIUS.md,
-    padding: 16,
-    marginBottom: 12,
-    borderWidth: 1.5,
-    borderColor: COLORS.borderStrong,
-    borderLeftWidth: 4,
-    borderLeftColor: COLORS.primary,
-  },
-  cardHeader: {
+  historyRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 14,
+    justifyContent: 'space-between',
+    paddingVertical: 18,
+    paddingHorizontal: 24,
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.border,
   },
-  iconBox: {
-    width: 32, height: 32, borderRadius: BORDER_RADIUS.sm,
-    backgroundColor: COLORS.surface2, borderWidth: 1, borderColor: COLORS.border,
-    justifyContent: 'center', alignItems: 'center', marginRight: 12,
-  },
-  cardTitleSection: {
+  mainCol: {
     flex: 1,
+    paddingRight: 16,
   },
-  sparepartName: {
+  partName: {
     fontFamily: FONT_FAMILY.display,
-    fontSize: 15,
-    fontWeight: '700',
-    letterSpacing: 0.5,
+    fontSize: 18,
     color: COLORS.textPrimary,
+    marginBottom: 4,
   },
-  dateText: {
+  metaRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flexWrap: 'wrap',
+    gap: 6,
+  },
+  metaDate: {
     fontFamily: FONT_FAMILY.mono,
-    fontSize: 10,
-    letterSpacing: 1,
+    fontSize: 11,
     color: COLORS.textTertiary,
+    letterSpacing: 0.5,
+  },
+  metaDivider: {
+    fontFamily: FONT_FAMILY.mono,
+    fontSize: 11,
+    color: COLORS.borderStrong,
+  },
+  brandTag: {
+    fontFamily: FONT_FAMILY.mono,
+    fontSize: 11,
+    color: COLORS.textSecondary,
+    letterSpacing: 0.5,
+  },
+  costText: {
+    fontFamily: FONT_FAMILY.mono,
+    fontSize: 11,
+    color: COLORS.textTertiary,
+    letterSpacing: 0.5,
+    marginTop: 6,
+  },
+  statCol: {
+    alignItems: 'flex-end',
+    justifyContent: 'center',
+  },
+  odoStat: {
+    fontFamily: FONT_FAMILY.mono,
+    fontSize: 22,
+    fontWeight: '300',
+    color: COLORS.textPrimary,
+    letterSpacing: -0.5,
+  },
+  odoLabel: {
+    fontFamily: FONT_FAMILY.mono,
+    fontSize: 9,
+    color: COLORS.textTertiary,
+    letterSpacing: 1,
     marginTop: 2,
   },
-  cardBody: {
-    backgroundColor: COLORS.surface2,
-    borderRadius: BORDER_RADIUS.sm,
-    padding: 12,
-  },
-  detailRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
+  loadMoreBtn: {
     alignItems: 'center',
-    paddingVertical: 6,
-  },
-  detailLabel: {
-    fontFamily: FONT_FAMILY.monoBold,
-    fontSize: 10,
-    letterSpacing: 1,
-    color: COLORS.textSecondary,
-  },
-  detailValue: {
-    fontFamily: FONT_FAMILY.bodyBold,
-    fontSize: 12.5,
-    color: COLORS.textPrimary,
-  },
-  detailValueBold: {
-    fontFamily: FONT_FAMILY.monoBold,
-    fontSize: 12.5,
-    color: COLORS.primary,
-  },
-  loadMoreButton: {
-    alignItems: 'center',
-    paddingVertical: 20,
+    justifyContent: 'center',
+    paddingVertical: 24,
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.border,
   },
   loadMoreText: {
-    fontFamily: FONT_FAMILY.monoBold,
-    fontSize: 11,
-    letterSpacing: 1,
-    color: COLORS.primary,
+    fontFamily: FONT_FAMILY.mono,
+    fontSize: 12,
+    color: COLORS.textSecondary,
+    letterSpacing: 0.5,
   },
   emptyState: {
+    paddingVertical: 48,
+    paddingHorizontal: 32,
     alignItems: 'center',
-    paddingTop: 50,
-    paddingHorizontal: 30,
-    gap: 12,
-  },
-  ring: {
-    width: 60, height: 60, borderRadius: BORDER_RADIUS.sm, backgroundColor: COLORS.surface2,
-    borderWidth: 1.5, borderColor: COLORS.borderStrong, borderStyle: 'dashed',
-    justifyContent: 'center', alignItems: 'center',
-  },
-  emptyIcon: {
-    fontSize: 28,
+    gap: 10,
   },
   emptyTitle: {
-    fontFamily: FONT_FAMILY.display,
-    fontSize: 16,
-    fontWeight: '700',
-    color: COLORS.textPrimary,
+    fontFamily: FONT_FAMILY.mono,
+    fontSize: 12,
     letterSpacing: 1,
+    color: COLORS.textTertiary,
+    marginTop: 6,
   },
   emptySubtitle: {
     fontFamily: FONT_FAMILY.body,
-    fontSize: 12.5,
-    color: COLORS.textSecondary,
+    fontSize: 13,
+    color: COLORS.textTertiary,
     textAlign: 'center',
     lineHeight: 18,
+    maxWidth: 280,
   },
 });

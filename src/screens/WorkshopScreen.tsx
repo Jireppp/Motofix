@@ -7,6 +7,7 @@ import { COLORS, FONT_FAMILY } from '../constants/theme';
 import {
   MapPin, Wrench, Droplet, Zap, Wind, StopCircle, CircleDashed, Settings, Link, Battery
 } from 'lucide-react-native';
+import { haptic } from '../utils/haptics';
 
 // Hallmark - genre: modern-minimal - macrostructure: Editorial/Magazine - design-system: none - designed-as-app
 // Structural fingerprint: Huge magazine heading, Asymmetric list (left category, right items), Negative space dividers, Pill buttons
@@ -19,32 +20,32 @@ const GOOGLE_MAPS_SEARCH_URL = 'https://www.google.com/maps/search/bengkel+motor
 
 const MAINTENANCE_CATEGORIES = [
   {
-    category: 'MESIN & OLI',
+    category: 'ENGINE & FLUIDS',
     items: [
-      { iconId: 'droplet', title: 'Oli Mesin', desc: 'Ganti oli setiap 2.000 - 4.000 km, tergantung jenis oli dan pemakaian.', tags: ['VITAL', 'RUTIN'] },
-      { iconId: 'thermometer', title: 'Air Radiator', desc: 'Periksa coolent setiap 8.000 km. Mesin overheat sering terjadi karena cairan habis.', tags: ['LIQUID'] },
-      { iconId: 'wind', title: 'Filter Udara', desc: 'Bersihkan setiap servis, ganti jika sudah terlalu kotor (sekitar 15.000 km).', tags: ['FILTER'] },
+      { iconId: 'droplet', title: 'Engine Oil', desc: 'Change oil every 2,000 - 4,000 km depending on oil grade and riding severity.', tags: ['VITAL', 'ROUTINE'] },
+      { iconId: 'thermometer', title: 'Radiator Coolant', desc: 'Inspect coolant level every 8,000 km. Depleted coolant leads to sudden engine overheating.', tags: ['LIQUID'] },
+      { iconId: 'wind', title: 'Air Filter', desc: 'Clean at every routine check; replace when clogged (typically around 15,000 km).', tags: ['FILTER'] },
     ]
   },
   {
-    category: 'PENGEREMAN',
+    category: 'BRAKING SYSTEM',
     items: [
-      { iconId: 'stopcircle', title: 'Kampas Rem', desc: 'Cek ketebalan kampas setiap bulan. Ganti jika mulai terdengar suara decitan.', tags: ['SAFETY'] },
-      { iconId: 'droplet', title: 'Minyak Rem', desc: 'Kuras dan ganti minyak rem setiap 20.000 km atau 2 tahun sekali agar pengereman optimal.', tags: ['LIQUID', 'SAFETY'] },
+      { iconId: 'stopcircle', title: 'Brake Pads', desc: 'Inspect pad lining monthly. Replace immediately if squeaking or metallic noise occurs.', tags: ['SAFETY'] },
+      { iconId: 'droplet', title: 'Brake Fluid', desc: 'Flush and replace brake fluid every 20,000 km or 2 years for consistent hydraulic pressure.', tags: ['LIQUID', 'SAFETY'] },
     ]
   },
   {
-    category: 'PENGGERAK',
+    category: 'DRIVETRAIN',
     items: [
-      { iconId: 'circledashed', title: 'V-Belt / Rantai', desc: 'Cek ketegangan rantai tiap 1.000 km. Untuk matic, ganti V-Belt tiap 20.000 - 25.000 km.', tags: ['CRITICAL'] },
-      { iconId: 'settings', title: 'Oli Gardan', desc: 'Khusus matic, ganti oli gardan setiap 8.000 - 10.000 km untuk transmisi halus.', tags: ['LIQUID'] },
+      { iconId: 'circledashed', title: 'Drive Belt / Chain', desc: 'Inspect chain tension every 1,000 km. For automatic scooters, replace CVT belt every 20,000 - 25,000 km.', tags: ['CRITICAL'] },
+      { iconId: 'settings', title: 'Gearbox Oil', desc: 'For automatic scooters, refresh gear oil every 8,000 - 10,000 km for silky power transfer.', tags: ['LIQUID'] },
     ]
   },
   {
-    category: 'KELISTRIKAN',
+    category: 'ELECTRICAL',
     items: [
-      { iconId: 'battery', title: 'Aki (Battery)', desc: 'Ganti aki jika starter mulai berat atau lampu meredup. Usia normal aki 1.5 - 2 tahun.', tags: ['POWER'] },
-      { iconId: 'zap', title: 'Busi', desc: 'Ganti busi setiap 8.000 - 10.000 km agar pembakaran sempurna dan irit bensin.', tags: ['POWER'] },
+      { iconId: 'battery', title: 'Starter Battery', desc: 'Replace battery when electric start hesitates or headlight dims. Typical lifespan is 1.5 - 2 years.', tags: ['POWER'] },
+      { iconId: 'zap', title: 'Spark Plug', desc: 'Replace spark plug every 8,000 - 10,000 km to guarantee crisp ignition and peak fuel efficiency.', tags: ['POWER'] },
     ]
   }
 ];
@@ -69,12 +70,14 @@ export default function WorkshopScreen({ onGoBack }: WorkshopScreenProps) {
   const styles = getStyles(COLORS);
 
   const handleOpenMaps = async () => {
+    haptic.medium();
     try {
       await Linking.openURL(GOOGLE_MAPS_SEARCH_URL);
     } catch {
-      Alert.alert('Gagal Membuka Peta', 'Tidak dapat membuka Google Maps.',
-        [{ text: 'Batal', style: 'cancel' },
-        { text: 'Buka di Browser', onPress: () => Linking.openURL(GOOGLE_MAPS_SEARCH_URL).catch(() => { }) }]);
+      haptic.warning();
+      Alert.alert('Unable to Open Maps', 'Could not launch Google Maps.',
+        [{ text: 'Cancel', style: 'cancel' },
+        { text: 'Open in Browser', onPress: () => Linking.openURL(GOOGLE_MAPS_SEARCH_URL).catch(() => { }) }]);
     }
   };
 
@@ -83,8 +86,14 @@ export default function WorkshopScreen({ onGoBack }: WorkshopScreenProps) {
       {/* Minimal Top Nav */}
       <View style={styles.topNav}>
         {onGoBack && (
-          <TouchableOpacity onPress={onGoBack} hitSlop={{ top: 20, bottom: 20, left: 20, right: 20 }}>
-            <Text style={styles.navLink}>← Back to Index</Text>
+          <TouchableOpacity
+            onPress={() => {
+              haptic.light();
+              onGoBack();
+            }}
+            hitSlop={{ top: 20, bottom: 20, left: 20, right: 20 }}
+          >
+            <Text style={styles.navLink}>← Back to Garage</Text>
           </TouchableOpacity>
         )}
       </View>

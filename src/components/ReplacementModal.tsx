@@ -5,6 +5,7 @@ import {
 import { useTheme } from '../contexts/ThemeContext';
 import { FONT_FAMILY } from '../constants/theme';
 import { X } from 'lucide-react-native';
+import { haptic } from '../utils/haptics';
 
 // Hallmark - genre: modern-minimal - macrostructure: Form-Driven - design-system: none - designed-as-app
 // Structural fingerprint: Negative space modal, Sleek underlines, Pill buttons
@@ -32,11 +33,13 @@ export default function ReplacementModal({
 
   const handleConfirm = async () => {
     if (!brandName.trim()) {
-      setError('Masukkan merek sparepart pengganti.');
+      haptic.warning();
+      setError('Please enter replacement part brand.');
       return;
     }
     if (brandName.length > 50) {
-      setError('Merek sparepart maksimal 50 karakter.');
+      haptic.warning();
+      setError('Part brand cannot exceed 50 characters.');
       return;
     }
 
@@ -46,16 +49,19 @@ export default function ReplacementModal({
     setError(null);
     try {
       await onConfirm(brandName.trim(), parsedCost);
+      haptic.success();
       setBrandName('');
       setCost('');
     } catch (err) {
-      setError('Gagal menyimpan. Coba lagi.');
+      haptic.warning();
+      setError('Failed to record replacement. Please try again.');
     } finally {
       setLoading(false);
     }
   };
 
   const handleCancel = () => {
+    haptic.light();
     setBrandName('');
     setCost('');
     setError(null);
@@ -68,7 +74,7 @@ export default function ReplacementModal({
         <View style={styles.modal}>
           
           <View style={styles.modalHeader}>
-            <Text style={styles.title}>[ Log Replacement ]</Text>
+            <Text style={styles.title}>Log Replacement</Text>
             <TouchableOpacity onPress={handleCancel} hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}>
               <X size={20} color={COLORS.textTertiary} strokeWidth={2} />
             </TouchableOpacity>

@@ -1,9 +1,10 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { StatusBar } from 'expo-status-bar';
 import {
-  SafeAreaView, StyleSheet, View, Text, BackHandler,
+  StyleSheet, View, Text, BackHandler,
   Image, Animated, TouchableOpacity,
 } from 'react-native';
+import { SafeAreaProvider, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { COLORS, SPACING, FONT_SIZE, BORDER_RADIUS, LABEL_STYLE, FONT_FAMILY } from './src/constants/theme';
 import { ThemeProvider, useTheme } from './src/contexts/ThemeContext';
 import { authService } from './src/services/authService';
@@ -20,12 +21,14 @@ import AddVehicleScreen from './src/screens/AddVehicleScreen';
 import AddSparepartScreen from './src/screens/AddSparepartScreen';
 import WorkshopScreen from './src/screens/WorkshopScreen';
 import HelpScreen from './src/screens/HelpScreen';
+import { haptic } from './src/utils/haptics';
 
 type AppScreen = 'loading' | 'garage' | 'vehicleDetail' | 'addVehicle' | 'addSparepart' | 'workshop' | 'help';
 type BottomTab = 'garage' | 'workshop';
 
 function AppContent() {
   const { colors: COLORS, isDark } = useTheme();
+  const insets = useSafeAreaInsets();
   const styles = getStyles(COLORS);
 
   const [screen, setScreen] = useState<AppScreen>('loading');
@@ -134,6 +137,7 @@ function AppContent() {
   };
 
   const handleTabPress = (tab: BottomTab) => {
+    haptic.selection();
     setActiveTab(tab);
     if (tab === 'garage') smartRoute();
     else if (tab === 'workshop') setScreen('workshop');
@@ -141,13 +145,13 @@ function AppContent() {
 
   // ── Bottom Tab Bar Minimalist ──
   const renderBottomTabBar = () => (
-    <View style={styles.tabBar}>
+    <View style={[styles.tabBar, { bottom: Math.max(20, insets.bottom + 8) }]}>
       <TouchableOpacity
         style={styles.tabItem}
         onPress={() => handleTabPress('garage')}
         activeOpacity={0.7}
       >
-        <Text style={[styles.tabIcon, activeTab === 'garage' && styles.tabIconActive]}>INDEX</Text>
+        <Text style={[styles.tabIcon, activeTab === 'garage' && styles.tabIconActive]}>GARAGE</Text>
         <View style={[styles.tabIndicator, activeTab === 'garage' && styles.tabIndicatorActive]} />
       </TouchableOpacity>
       
@@ -171,7 +175,7 @@ function AppContent() {
           <View style={styles.splashContainer}>
             {/* Corner brackets */}
             <View style={[styles.cornerBracket, styles.cornerTL]} />
-            <View style={[styles.cornerBracket, styles.cornerBR]} />
+            <View style={[styles.cornerBracket, styles.cornerBR, { bottom: Math.max(40, insets.bottom + 20) }]} />
 
             {/* Logo container */}
             <View style={styles.splashLogoBox}>
@@ -184,7 +188,7 @@ function AppContent() {
 
             {/* Title */}
             <Text style={styles.splashTitle}>MOTOFIX</Text>
-            <Text style={styles.splashSubtitle}>ASISTEN SERVIS MOTOR{'\n'}TERPERCAYA</Text>
+            <Text style={styles.splashSubtitle}>PREMIUM MOTORCYCLE{'\n'}MAINTENANCE TRACKER</Text>
 
             {/* Progress bar */}
             <View style={styles.progressTrack}>
@@ -200,7 +204,7 @@ function AppContent() {
                 ]}
               />
             </View>
-            <Text style={styles.splashFooter}>MOTOFIX — Sparepart Replacement Tracker</Text>
+            <Text style={[styles.splashFooter, { bottom: Math.max(30, insets.bottom + 16) }]}>MOTOFIX — Sparepart Replacement Tracker</Text>
           </View>
         );
 
@@ -269,10 +273,10 @@ function AppContent() {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
+    <View style={[styles.container, { paddingTop: insets.top }]}>
       <StatusBar style={isDark ? 'light' : 'dark'} />
       {renderScreen()}
-    </SafeAreaView>
+    </View>
   );
 }
 
@@ -288,9 +292,11 @@ export default function App() {
   if (!fontsLoaded && !fontError) return null;
 
   return (
-    <ThemeProvider>
-      <AppContent />
-    </ThemeProvider>
+    <SafeAreaProvider>
+      <ThemeProvider>
+        <AppContent />
+      </ThemeProvider>
+    </SafeAreaProvider>
   );
 }
 
@@ -338,8 +344,8 @@ const getStyles = (COLORS: any) => StyleSheet.create({
     marginBottom: 22,
   },
   splashLogo: {
-    width: 40,
-    height: 40,
+    width: 72,
+    height: 72,
     tintColor: COLORS.primary,
   },
   splashTitle: {
