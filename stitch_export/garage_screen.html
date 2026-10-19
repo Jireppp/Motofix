@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Motofix - Garage Screen</title>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@500;700&family=IBM+Plex+Sans:wght@400;700&family=Rajdhani:wght@700&display=swap" rel="stylesheet">
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background-color: #07090C;
+      color: #EDEFF2;
+      font-family: 'IBM Plex Sans', sans-serif;
+      min-height: 100vh;
+      padding: 24px 20px 100px;
+    }
+    .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 24px;
+    }
+    .header-title {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 15px;
+      letter-spacing: 1px;
+      color: #EDEFF2;
+      text-transform: uppercase;
+    }
+    .header-icons {
+      display: flex;
+      gap: 16px;
+      color: #8A919B;
+    }
+    .guest-banner {
+      background-color: #101317;
+      border: 1px solid #262B31;
+      border-radius: 5px;
+      padding: 12px 16px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 24px;
+      cursor: pointer;
+    }
+    .guest-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background-color: #E0A526;
+      flex-shrink: 0;
+    }
+    .guest-text {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 11px;
+      color: #8A919B;
+      flex: 1;
+      line-height: 1.4;
+    }
+    .table-head {
+      display: flex;
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 10.5px;
+      letter-spacing: 1.6px;
+      color: #565C64;
+      padding-bottom: 8px;
+      border-bottom: 1px solid #262B31;
+      margin-bottom: 8px;
+    }
+    .vehicle-row {
+      display: flex;
+      align-items: center;
+      padding: 18px 0;
+      border-bottom: 1px solid #181C21;
+      cursor: pointer;
+    }
+    .brand-col { width: 44px; display: flex; align-items: center; }
+    .brand-icon { width: 24px; height: 24px; background: #181C21; border-radius: 4px; display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: bold; color: #EDEFF2; }
+    .main-col { flex: 1; min-width: 0; }
+    .vehicle-name { font-family: 'Rajdhani', sans-serif; font-size: 20px; font-weight: 700; color: #EDEFF2; letter-spacing: 0.5px; }
+    .plate-badge { font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: #8A919B; margin-top: 2px; }
+    .odo-col { width: 110px; text-align: right; }
+    .odo-val { font-family: 'IBM Plex Mono', monospace; font-weight: 700; font-size: 15px; color: #EDEFF2; }
+    .add-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 20px 0;
+      border-bottom: 1px dashed #262B31;
+      color: #8A919B;
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 12px;
+      cursor: pointer;
+    }
+    .tab-bar {
+      position: fixed;
+      bottom: 24px;
+      left: 15%;
+      right: 15%;
+      height: 56px;
+      background-color: #101317;
+      border: 1px solid #262B31;
+      border-radius: 9999px;
+      display: flex;
+      align-items: center;
+      box-shadow: 0 8px 16px rgba(0,0,0,0.5);
+    }
+    .tab-item {
+      flex: 1;
+      text-align: center;
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 11px;
+      letter-spacing: 1px;
+      color: #8A919B;
+    }
+    .tab-item.active {
+      color: #EDEFF2;
+      font-weight: 700;
+    }
+    .tab-divider { width: 1px; height: 24px; background-color: #262B31; }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <div class="header-title">Garage // Vehicles</div>
+    <div class="header-icons">
+      <span>☀</span>
+      <span>ⓘ</span>
+    </div>
+  </div>
+
+  <div class="guest-banner">
+    <div class="guest-dot"></div>
+    <div class="guest-text">You are using Guest Mode. Sign in with Google to backup your garage.</div>
+    <span style="color: #565C64;">›</span>
+  </div>
+
+  <div class="table-head">
+    <div style="width: 44px;"></div>
+    <div style="flex: 1;">UNIT / PLATE</div>
+    <div style="width: 110px; text-align: right;">ODOMETER</div>
+  </div>
+
+  <div class="vehicle-row">
+    <div class="brand-col">
+      <div class="brand-icon">YMH</div>
+    </div>
+    <div class="main-col">
+      <div class="vehicle-name">Yamaha R15 V3</div>
+      <div class="plate-badge">B 4821 XYZ</div>
+    </div>
+    <div class="odo-col">
+      <div class="odo-val">14,250 km</div>
+    </div>
+  </div>
+
+  <div class="vehicle-row">
+    <div class="brand-col">
+      <div class="brand-icon">HND</div>
+    </div>
+    <div class="main-col">
+      <div class="vehicle-name">Honda Vario 160</div>
+      <div class="plate-badge">D 1902 KAA</div>
+    </div>
+    <div class="odo-col">
+      <div class="odo-val">8,400 km</div>
+    </div>
+  </div>
+
+  <div class="add-row">
+    <span>+</span>
+    <span>Register new vehicle</span>
+  </div>
+
+  <div class="tab-bar">
+    <div class="tab-item active">GARAGE</div>
+    <div class="tab-divider"></div>
+    <div class="tab-item">WORKSHOP</div>
+  </div>
+</body>
+</html>

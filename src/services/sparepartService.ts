@@ -64,7 +64,7 @@ export const sparepartService = {
       .single();
 
     if (error) {
-      if (error.code === '23505') throw new Error('Sparepart ini sudah ditambahkan.');
+      if (error.code === '23505') throw new Error('This component is already tracked for this vehicle.');
       throw error;
     }
     return data;
@@ -91,9 +91,28 @@ export const sparepartService = {
       .select()
       .single();
 
+    let masterId: string | undefined = masterEntry?.id;
+
     if (masterError) {
-      if (masterError.code === '23505') throw new Error('A spare part with this name already exists in the catalog.');
-      throw masterError;
+      if (masterError.code === '23505') {
+        const { data: existing, error: findError } = await supabase
+          .from('master_data')
+          .select('id')
+          .ilike('sparepart_name', sparepartName)
+          .limit(1)
+          .single();
+
+        if (findError || !existing) {
+          throw new Error('A component with this name already exists in the catalog.');
+        }
+        masterId = existing.id;
+      } else {
+        throw masterError;
+      }
+    }
+
+    if (!masterId) {
+      throw new Error('Failed to resolve component catalog record.');
     }
 
     // 2. Track it for this vehicle
@@ -101,7 +120,7 @@ export const sparepartService = {
       .from('vehicle_sparepart')
       .insert({
         vehicle_id: vehicleId,
-        master_data_id: masterEntry.id,
+        master_data_id: masterId,
         custom_interval: customInterval,
         custom_time_interval: customTimeInterval,
         km_at_setup: currentKm,
@@ -110,23 +129,51 @@ export const sparepartService = {
       .select()
       .single();
 
-    if (error) throw error;
+    if (error) {
+      if (error.code === '23505') throw new Error('This component is already tracked for this vehicle.');
+      throw error;
+    }
     return data;
   },
 
-  /** Mark a sparepart as replaced. Resets cycle and logs replacement. */
+  /** Mark a sparepart as replaced. Resets cycle and logs replacement with current server KM. */
   async replaceSparepart(
     sparepartId: string,
     currentKm: number,
     brandName: string,
     interval: number,
     cost: number = 0
-  ): Promise<void> {
-    // Update sparepart: reset km_at_setup to current KM
+  ): Promise<{ success: boolean; currentKm: number }> {
+    const safeCost = Math.min(Math.max(0, cost || 0), 100000000);
+
+    // 1. Try atomic database RPC function if installed
+    try {
+      const { data, error } = await supabase.rpc('replace_sparepart_atomic', {
+        p_sparepart_id: sparepartId,
+        p_brand_name: brandName,
+        p_cost: safeCost,
+      });
+
+      if (!error && data) {
+        return data as { success: boolean; currentKm: number };
+      }
+    } catch {
+      // RPC not installed yet, proceed to robust fallback
+    }
+
+    // 2. Client fallback: query the vehicle directly to get the latest odometer
+    const { data: partData } = await supabase
+      .from('vehicle_sparepart')
+      .select('vehicle_id, user_vehicle(current_km)')
+      .eq('id', sparepartId)
+      .single();
+
+    const actualKm = (partData as any)?.user_vehicle?.current_km ?? currentKm;
+
     const { error: updateError } = await supabase
       .from('vehicle_sparepart')
       .update({
-        km_at_setup: currentKm,
+        km_at_setup: actualKm,
         status: 'Normal',
         date_at_setup: new Date().toISOString(),
         updated_at: new Date().toISOString(),
@@ -135,17 +182,18 @@ export const sparepartService = {
 
     if (updateError) throw updateError;
 
-    // Log the replacement
     const { error: logError } = await supabase
       .from('maintenance_log')
       .insert({
         sparepart_id: sparepartId,
-        km_at_replacement: currentKm,
+        km_at_replacement: actualKm,
         brand_name: brandName,
-        cost: cost,
+        cost: safeCost,
       });
 
     if (logError) throw logError;
+
+    return { success: true, currentKm: actualKm };
   },
 
   /** Delete a tracked sparepart. */

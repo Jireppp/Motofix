@@ -6,10 +6,11 @@ import {
   StyleSheet,
   ActivityIndicator,
   TouchableOpacity,
+  Image,
 } from 'react-native';
 import { COLORS, FONT_FAMILY } from '../constants/theme';
+import { EMPTY_STATE_ICONS } from '../constants/assets';
 import { sparepartService } from '../services/sparepartService';
-import { History } from 'lucide-react-native';
 
 // Hallmark - genre: modern-minimal - macrostructure: Index-First - design-system: none - designed-as-app
 // Structural fingerprint: Full-bleed rows, Hairline dividers, Monospace telemetry, Typographic actions
@@ -47,6 +48,7 @@ export default function HistoryTab({ vehicleId, refreshKey }: HistoryTabProps) {
       } else {
         setHistory(result.data);
       }
+      setPage(pageNum);
       setHasMore(result.hasMore);
     } catch (err) {
       console.log('History fetch error:', err);
@@ -58,16 +60,13 @@ export default function HistoryTab({ vehicleId, refreshKey }: HistoryTabProps) {
 
   useEffect(() => {
     setLoading(true);
-    setPage(0);
     fetchHistory(0, false);
   }, [vehicleId, refreshKey, fetchHistory]);
 
   const loadMore = () => {
     if (!hasMore || loadingMore) return;
     setLoadingMore(true);
-    const nextPage = page + 1;
-    setPage(nextPage);
-    fetchHistory(nextPage, true);
+    fetchHistory(page + 1, true);
   };
 
   const formatDate = (dateStr: string) => {
@@ -125,7 +124,11 @@ export default function HistoryTab({ vehicleId, refreshKey }: HistoryTabProps) {
   if (history.length === 0) {
     return (
       <View style={styles.emptyState}>
-        <History size={26} color={COLORS.textTertiary} strokeWidth={1.5} />
+        <Image
+          source={EMPTY_STATE_ICONS.history}
+          style={{ width: 44, height: 44, tintColor: COLORS.textTertiary, opacity: 0.75 }}
+          resizeMode="contain"
+        />
         <Text style={styles.emptyTitle}>0 SERVICE LOGS RECORDED</Text>
         <Text style={styles.emptySubtitle}>
           Maintenance and replacement records will appear here chronologically.

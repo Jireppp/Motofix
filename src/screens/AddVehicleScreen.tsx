@@ -60,15 +60,21 @@ export default function AddVehicleScreen({ onGoBack, onSuccess }: AddVehicleScre
     setSubmitError(null);
     if (!isFormValid) return;
 
-    const km = parseInt(initialKm);
-    if (isNaN(km) || km < 0) {
-      setSubmitError('Invalid odometer value.');
+    const cleanKm = initialKm.trim();
+    if (!/^\d+$/.test(cleanKm)) {
+      setSubmitError('Odometer must be a valid whole number.');
+      return;
+    }
+
+    const km = parseInt(cleanKm, 10);
+    if (isNaN(km) || km < 0 || km > 999999) {
+      setSubmitError('Odometer must be between 0 and 999,999 km.');
       return;
     }
 
     setSaving(true);
     try {
-      await vehicleService.addVehicle(selectedBrand.id, vehicleName.trim(), km, plateNumber.trim());
+      await vehicleService.createVehicle(selectedBrand.id, vehicleName.trim(), plateNumber.trim(), km);
       onSuccess();
     } catch (e: any) {
       setSubmitError(e.message || 'Failed to add vehicle.');

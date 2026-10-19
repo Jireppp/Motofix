@@ -2,12 +2,14 @@ import React, { useState, useEffect } from 'react';
 import { useTheme } from '../contexts/ThemeContext';
 import {
   View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView,
-  ActivityIndicator, KeyboardAvoidingView, Platform, Switch
+  ActivityIndicator, KeyboardAvoidingView, Platform, Switch, Image
 } from 'react-native';
 import { COLORS, FONT_FAMILY } from '../constants/theme';
+import { getSparepartIcon } from '../constants/assets';
 import { UserVehicle, MasterSparepart, MasterCategory } from '../types';
 import { sparepartService } from '../services/sparepartService';
-import { Wrench, Droplet, Zap, Wind, CircleDashed, ChevronLeft, Plus } from 'lucide-react-native';
+import { Plus } from 'lucide-react-native';
+import { haptic } from '../utils/haptics';
 
 // Hallmark - genre: modern-minimal - macrostructure: Form-Driven - design-system: none - designed-as-app
 // Structural fingerprint: Centered heading, Single column, Negative space dividers, Sleek underlines
@@ -67,6 +69,7 @@ export default function AddSparepartScreen({ vehicle, onGoBack, onSuccess }: Add
   };
 
   const handleSelectMaster = (item: any) => {
+    haptic.selection();
     setSelected(item);
     setIsCustomMode(false);
     setInterval(item.default_interval.toString());
@@ -74,6 +77,7 @@ export default function AddSparepartScreen({ vehicle, onGoBack, onSuccess }: Add
   };
 
   const handleSelectCustom = () => {
+    haptic.selection();
     setSelected(null);
     setIsCustomMode(true);
     setCustomName('');
@@ -83,11 +87,14 @@ export default function AddSparepartScreen({ vehicle, onGoBack, onSuccess }: Add
 
   const validateLegacy = (): number | null => {
     if (!isLegacy) return 0;
-    if (!legacyKm.trim()) { setLegacyError('Required'); return null; }
-    const km = parseInt(legacyKm);
+    const clean = legacyKm.trim();
+    if (!clean) { setLegacyError('Required'); return null; }
+    if (!/^\d+$/.test(clean)) { setLegacyError('Must be whole number'); return null; }
+    const km = parseInt(clean, 10);
     if (isNaN(km) || km < 0) { setLegacyError('Invalid number'); return null; }
-    const intv = parseInt(interval);
+    const intv = parseInt(interval, 10);
     if (!isNaN(intv) && km > intv) { setLegacyError('Usage exceeds interval'); return null; }
+    if (km > vehicle.current_km) { setLegacyError('Usage exceeds current odometer'); return null; }
     return km;
   };
 
@@ -102,9 +109,15 @@ export default function AddSparepartScreen({ vehicle, onGoBack, onSuccess }: Add
       return;
     }
 
-    const intervalVal = parseInt(interval);
-    if (isNaN(intervalVal) || intervalVal <= 0) {
-      setSubmitError('A valid interval (e.g. 2000) is required.');
+    const cleanInterval = interval.trim();
+    if (!/^\d+$/.test(cleanInterval)) {
+      setSubmitError('A valid whole number interval (e.g. 2000) is required.');
+      return;
+    }
+
+    const intervalVal = parseInt(cleanInterval, 10);
+    if (intervalVal < 100 || intervalVal > 100000) {
+      setSubmitError('Interval must be between 100 and 100,000 km.');
       return;
     }
 
@@ -117,6 +130,7 @@ export default function AddSparepartScreen({ vehicle, onGoBack, onSuccess }: Add
       } else if (selected) {
         await sparepartService.addSparepart(vehicle.id, selected.id, intervalVal, kmAtSetup);
       }
+      haptic.success();
       onSuccess();
     } catch (e: any) {
       setSubmitError(e.message || 'Failed to save part configuration.');
@@ -124,14 +138,15 @@ export default function AddSparepartScreen({ vehicle, onGoBack, onSuccess }: Add
     }
   };
 
-  const renderIcon = (name?: string) => {
-    if (!name) return <Wrench size={18} color={COLORS.textPrimary} />;
-    const n = name.toLowerCase();
-    if (n.includes('oli') || n.includes('minyak') || n.includes('cairan')) return <Droplet size={18} color={COLORS.textPrimary} />;
-    if (n.includes('busi') || n.includes('aki') || n.includes('lampu')) return <Zap size={18} color={COLORS.textPrimary} />;
-    if (n.includes('filter')) return <Wind size={18} color={COLORS.textPrimary} />;
-    if (n.includes('rantai') || n.includes('v-belt') || n.includes('ban')) return <CircleDashed size={18} color={COLORS.textPrimary} />;
-    return <Wrench size={18} color={COLORS.textPrimary} />;
+  const renderIcon = (name?: string, isSelected: boolean = false) => {
+    const iconColor = isSelected ? COLORS.bg : COLORS.textPrimary;
+    return (
+      <Image
+        source={getSparepartIcon(name)}
+        style={{ width: 18, height: 18, tintColor: iconColor }}
+        resizeMode="contain"
+      />
+    );
   };
 
   return (
@@ -171,8 +186,8 @@ export default function AddSparepartScreen({ vehicle, onGoBack, onSuccess }: Add
                       style={[styles.chip, isSelected && styles.chipActive]}
                       onPress={() => handleSelectMaster(item)}
                     >
-                      <View style={{ opacity: isSelected ? 1 : 0.5, marginRight: 8 }}>
-                        {renderIcon(item.sparepart_name)}
+                      <View style={{ opacity: isSelected ? 1 : 0.8, marginRight: 8 }}>
+                        {renderIcon(item.sparepart_name, isSelected)}
                       </View>
                       <Text style={[styles.chipText, isSelected && styles.chipTextActive]}>
                         {item.sparepart_name}

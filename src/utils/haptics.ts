@@ -1,4 +1,4 @@
-﻿import { Vibration } from 'react-native';
+import { Vibration } from 'react-native';
 
 // Optional dynamic import of expo-haptics for universal safety
 let ExpoHaptics: any = null;
@@ -78,6 +78,21 @@ export const haptic = {
         ExpoHaptics.notificationAsync(ExpoHaptics.NotificationFeedbackType.Warning);
       } else {
         Vibration.vibrate([0, 25, 50, 25]);
+      }
+    } catch {
+      // Safe fallback
+    }
+  },
+
+  /**
+   * Error notification pulse for failures
+   */
+  error: () => {
+    try {
+      if (ExpoHaptics?.notificationAsync && ExpoHaptics?.NotificationFeedbackType?.Error) {
+        ExpoHaptics.notificationAsync(ExpoHaptics.NotificationFeedbackType.Error);
+      } else {
+        Vibration.vibrate([0, 30, 40, 30]);
       }
     } catch {
       // Safe fallback

@@ -9,6 +9,7 @@ import { COLORS, SPACING, FONT_SIZE, BORDER_RADIUS, LABEL_STYLE, FONT_FAMILY } f
 import { ThemeProvider, useTheme } from './src/contexts/ThemeContext';
 import { authService } from './src/services/authService';
 import { vehicleService } from './src/services/vehicleService';
+import { notificationService } from './src/services/notificationService';
 import { UserVehicle } from './src/types';
 
 import { useFonts, Rajdhani_700Bold } from '@expo-google-fonts/rajdhani';
@@ -21,9 +22,11 @@ import AddVehicleScreen from './src/screens/AddVehicleScreen';
 import AddSparepartScreen from './src/screens/AddSparepartScreen';
 import WorkshopScreen from './src/screens/WorkshopScreen';
 import HelpScreen from './src/screens/HelpScreen';
+import ConfigErrorScreen from './src/screens/ConfigErrorScreen';
+import { isSupabaseConfigured } from './src/lib/supabase';
 import { haptic } from './src/utils/haptics';
 
-type AppScreen = 'loading' | 'garage' | 'vehicleDetail' | 'addVehicle' | 'addSparepart' | 'workshop' | 'help';
+type AppScreen = 'loading' | 'garage' | 'vehicleDetail' | 'addVehicle' | 'addSparepart' | 'workshop' | 'help' | 'configError';
 type BottomTab = 'garage' | 'workshop';
 
 function AppContent() {
@@ -38,6 +41,7 @@ function AppContent() {
   const [refreshKey, setRefreshKey] = useState(0);
 
   const progressAnim = useRef(new Animated.Value(0)).current;
+  const [loadingPercent, setLoadingPercent] = useState(0);
 
   // ─── Android Hardware Back Button Handler ───
   useEffect(() => {
@@ -60,6 +64,7 @@ function AppContent() {
           setActiveTab('garage');
           smartRoute();
           return true;
+        case 'configError':
         case 'garage':
         case 'loading':
         default:
@@ -71,7 +76,16 @@ function AppContent() {
   }, [screen]);
 
   useEffect(() => {
-    // Animate splash progress bar
+    if (!isSupabaseConfigured) {
+      setScreen('configError');
+      return;
+    }
+
+    const listenerId = progressAnim.addListener(({ value }) => {
+      setLoadingPercent(Math.min(100, Math.floor(value * 100)));
+    });
+
+    // Animate splash progress / odometer counter
     Animated.timing(progressAnim, {
       toValue: 1,
       duration: 2200,
@@ -88,10 +102,17 @@ function AppContent() {
       if (event === 'SIGNED_OUT') checkAuth();
     });
 
-    return () => { subscription.unsubscribe(); };
+    return () => {
+      progressAnim.removeListener(listenerId);
+      subscription.unsubscribe();
+    };
   }, []);
 
   const checkAuth = async () => {
+    if (!isSupabaseConfigured) {
+      setScreen('configError');
+      return;
+    }
     try {
       const session = await authService.getSession();
       if (session) {
@@ -111,6 +132,9 @@ function AppContent() {
       const v = await vehicleService.getVehicles();
       setVehicles(v);
       setScreen('garage');
+      if (v.length > 0) {
+        notificationService.resetWeeklyInactivityReminder(v[0].vehicle_name, true).catch(() => {});
+      }
     } catch {
       setScreen('garage');
     }
@@ -168,43 +192,35 @@ function AppContent() {
     </View>
   );
 
+  const digitsStr = loadingPercent.toString().padStart(3, '0');
+  const odometerDigits = [digitsStr[0], digitsStr[1], digitsStr[2], '%'];
+
   const renderScreen = () => {
     switch (screen) {
       case 'loading':
         return (
-          <View style={styles.splashContainer}>
-            {/* Corner brackets */}
-            <View style={[styles.cornerBracket, styles.cornerTL]} />
-            <View style={[styles.cornerBracket, styles.cornerBR, { bottom: Math.max(40, insets.bottom + 20) }]} />
-
-            {/* Logo container */}
-            <View style={styles.splashLogoBox}>
+          <View style={[styles.splashContainer, { paddingTop: Math.max(80, insets.top + 60), paddingBottom: Math.max(48, insets.bottom + 24) }]}>
+            {/* Center-Upper Hero Section */}
+            <View style={styles.splashHero}>
               <Image
                 source={require('./assets/splash-icon.png')}
                 style={styles.splashLogo}
                 resizeMode="contain"
               />
+              <Text style={styles.splashTitle}>MOTOFIX</Text>
+              <Text style={styles.splashSubtitle}>MOTORCYCLE MAINTENANCE TRACKER</Text>
             </View>
 
-            {/* Title */}
-            <Text style={styles.splashTitle}>MOTOFIX</Text>
-            <Text style={styles.splashSubtitle}>PREMIUM MOTORCYCLE{'\n'}MAINTENANCE TRACKER</Text>
-
-            {/* Progress bar */}
-            <View style={styles.progressTrack}>
-              <Animated.View
-                style={[
-                  styles.progressFill,
-                  {
-                    width: progressAnim.interpolate({
-                      inputRange: [0, 1],
-                      outputRange: ['0%', '100%'],
-                    }),
-                  },
-                ]}
-              />
+            {/* Bottom Minimalist Odometer Cluster */}
+            <View style={styles.splashLoadingSection}>
+              <View style={styles.odometerCluster}>
+                {odometerDigits.map((digit, index) => (
+                  <View key={index} style={styles.odometerBox}>
+                    <Text style={styles.odometerDigit}>{digit}</Text>
+                  </View>
+                ))}
+              </View>
             </View>
-            <Text style={[styles.splashFooter, { bottom: Math.max(30, insets.bottom + 16) }]}>MOTOFIX — Sparepart Replacement Tracker</Text>
           </View>
         );
 
@@ -267,6 +283,16 @@ function AppContent() {
           <HelpScreen onGoBack={handleGoBackToGarage} />
         );
 
+      case 'configError':
+        return (
+          <ConfigErrorScreen
+            onRetry={() => {
+              setScreen('loading');
+              checkAuth();
+            }}
+          />
+        );
+
       default:
         return null;
     }
@@ -309,51 +335,28 @@ const getStyles = (COLORS: any) => StyleSheet.create({
   // ─── Splash Screen ───
   splashContainer: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
     backgroundColor: COLORS.bg,
-    paddingHorizontal: 40,
-  },
-  cornerBracket: {
-    position: 'absolute',
-    width: 40,
-    height: 40,
-    borderColor: COLORS.textTertiary,
-  },
-  cornerTL: {
-    top: 40,
-    left: 20,
-    borderTopWidth: 2,
-    borderLeftWidth: 2,
-  },
-  cornerBR: {
-    bottom: 40,
-    right: 20,
-    borderBottomWidth: 2,
-    borderRightWidth: 2,
-  },
-  splashLogoBox: {
-    width: 80,
-    height: 80,
-    borderRadius: BORDER_RADIUS.md,
-    backgroundColor: COLORS.surface2,
-    borderWidth: 2,
-    borderColor: COLORS.primary,
-    justifyContent: 'center',
+    justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 22,
+    paddingHorizontal: SPACING.xl,
+  },
+  splashHero: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    transform: [{ translateY: -24 }],
   },
   splashLogo: {
-    width: 72,
-    height: 72,
-    tintColor: COLORS.primary,
+    width: 140,
+    height: 90,
+    marginBottom: 20,
   },
   splashTitle: {
     fontFamily: FONT_FAMILY.display,
     fontSize: 34,
     fontWeight: '700',
     color: COLORS.textPrimary,
-    letterSpacing: 1,
+    letterSpacing: 2.5,
     textTransform: 'uppercase',
   },
   splashSubtitle: {
@@ -361,35 +364,33 @@ const getStyles = (COLORS: any) => StyleSheet.create({
     fontSize: 10,
     letterSpacing: 2,
     color: COLORS.textTertiary,
-    marginTop: 8,
+    marginTop: 6,
     textAlign: 'center',
   },
-  progressTrack: {
-    width: 150,
-    height: 5,
-    backgroundColor: COLORS.surface2,
+  splashLoadingSection: {
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  odometerCluster: {
+    flexDirection: 'row',
+    gap: 6,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  odometerBox: {
+    width: 32,
+    height: 40,
+    backgroundColor: COLORS.surface1,
     borderWidth: 1,
-    borderColor: COLORS.borderStrong,
-    borderRadius: 2,
-    marginTop: 38,
-    overflow: 'hidden',
+    borderColor: COLORS.border,
+    borderRadius: 4,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
-  progressFill: {
-    height: '100%',
-    backgroundColor: COLORS.primary,
-  },
-  splashFooter: {
-    position: 'absolute',
-    bottom: 30,
-    left: '50%',
-    transform: [{ translateX: -150 }],
-    width: 300,
-    textAlign: 'center',
-    fontFamily: FONT_FAMILY.mono,
-    fontSize: 10,
-    letterSpacing: 1.4,
-    color: COLORS.borderStrong,
-    textTransform: 'uppercase',
+  odometerDigit: {
+    fontFamily: FONT_FAMILY.monoBold,
+    fontSize: 15,
+    color: COLORS.textPrimary,
   },
 
   // ── Bottom Tab Bar Minimalist ──

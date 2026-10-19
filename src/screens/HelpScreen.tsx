@@ -4,9 +4,10 @@ import {
   View, Text, TouchableOpacity, StyleSheet, ScrollView, ActivityIndicator, Alert
 } from 'react-native';
 import { COLORS, SPACING, FONT_SIZE, BORDER_RADIUS, LABEL_STYLE, FONT_FAMILY, SHADOWS } from '../constants/theme';
-import { ChevronLeft, Info, AlertTriangle, CheckCircle, User, Mail, LogOut } from 'lucide-react-native';
+import { ChevronLeft, Info, AlertTriangle, CheckCircle, User, LogOut, Trash2, Bell, BellOff } from 'lucide-react-native';
 import { supabase } from '../lib/supabase';
 import { authService } from '../services/authService';
+import { notificationService } from '../services/notificationService';
 import { haptic } from '../utils/haptics';
 
 // Hallmark - genre: modern-minimal - macrostructure: Long Document - design-system: none - designed-as-app
@@ -28,20 +29,42 @@ export default function HelpScreen({ onGoBack }: HelpScreenProps) {
   const styles = getStyles(COLORS);
 
   const [loadingAuth, setLoadingAuth] = useState(false);
+  const [deletingData, setDeletingData] = useState(false);
   const [isGuest, setIsGuest] = useState(true);
   const [userEmail, setUserEmail] = useState<string | null>(null);
+  const [reminderEnabled, setReminderEnabled] = useState(true);
 
   useEffect(() => {
     checkUser();
+    loadReminderPref();
   }, []);
+
+  const loadReminderPref = async () => {
+    const enabled = await notificationService.isReminderEnabled();
+    setReminderEnabled(enabled);
+  };
+
+  const handleToggleReminder = async () => {
+    haptic.selection();
+    const nextState = !reminderEnabled;
+    setReminderEnabled(nextState);
+    const scheduled = await notificationService.setReminderEnabled(nextState);
+    if (nextState && !scheduled) {
+      Alert.alert(
+        'Izin Notifikasi Diperlukan',
+        'Aktifkan izin notifikasi untuk Motofix di pengaturan ponsel Anda agar pengingat odometer mingguan dapat berjalan.'
+      );
+    }
+  };
 
   const checkUser = async () => {
     const { data: { session } } = await supabase.auth.getSession();
     if (session?.user) {
+      const isAnon = Boolean(session.user.is_anonymous);
       const providers = session.user.app_metadata?.providers || [];
       const hasGoogle = providers.includes('google');
       
-      if (!hasGoogle) {
+      if (isAnon || !hasGoogle) {
         setIsGuest(true);
         setUserEmail(null);
       } else {
@@ -81,12 +104,51 @@ export default function HelpScreen({ onGoBack }: HelpScreenProps) {
       await authService.signInAsGuest();
       haptic.success();
       checkUser();
+      onGoBack();
     } catch (error: any) {
       haptic.warning();
       Alert.alert('Logout Failed', error.message || 'Could not log out');
     } finally {
       setLoadingAuth(false);
     }
+  };
+
+  const handleDeleteAccountAndData = () => {
+    haptic.warning();
+    const title = isGuest ? 'Wipe Guest Garage Data?' : 'Delete Account & All Data?';
+    const message = isGuest
+      ? 'This will permanently delete all motorcycles, tracked spareparts, and service history stored in this Guest session. This action cannot be undone.'
+      : 'This will permanently erase all your registered motorcycles, tracked spareparts, and service logs from Motofix servers, and disconnect your Google account. This action cannot be undone.';
+
+    Alert.alert(title, message, [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: isGuest ? 'Wipe Data' : 'Delete Permanently',
+        style: 'destructive',
+        onPress: async () => {
+          setDeletingData(true);
+          try {
+            await notificationService.cancelWeeklyReminder();
+            await authService.deleteAccountAndData();
+            await authService.signInAsGuest();
+            haptic.success();
+            checkUser();
+            Alert.alert(
+              'Data Erased',
+              isGuest
+                ? 'All guest garage data has been permanently removed.'
+                : 'Your account and all associated vehicle telemetry data have been permanently deleted.'
+            );
+            onGoBack();
+          } catch (error: any) {
+            haptic.warning();
+            Alert.alert('Deletion Failed', error.message || 'Could not complete data deletion.');
+          } finally {
+            setDeletingData(false);
+          }
+        },
+      },
+    ]);
   };
 
   return (
@@ -115,7 +177,7 @@ export default function HelpScreen({ onGoBack }: HelpScreenProps) {
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>I. WORKFLOW</Text>
           <View style={styles.proseBlock}>
-            {STEPS.map((step, index) => (
+            {STEPS.map((step) => (
               <View key={step.step} style={styles.paragraph}>
                 <Text style={styles.pLead}>{step.step}. {step.title}</Text>
                 <Text style={styles.pText}>{step.description}</Text>
@@ -124,9 +186,9 @@ export default function HelpScreen({ onGoBack }: HelpScreenProps) {
           </View>
         </View>
 
-        {/* Prose Section: Notices */}
+        {/* Prose Section: Notices & Weekly Reminder */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>II. NOTICES</Text>
+          <Text style={styles.sectionTitle}>II. NOTICES & REMINDERS</Text>
           <View style={styles.proseBlock}>
             <View style={styles.callout}>
               <View style={styles.calloutIcon}>
@@ -151,12 +213,39 @@ export default function HelpScreen({ onGoBack }: HelpScreenProps) {
                 </Text>
               </View>
             </View>
+
+            <View style={[styles.callout, { marginTop: 24, borderLeftColor: reminderEnabled ? COLORS.primary : COLORS.border }]}>
+              <View style={styles.calloutIcon}>
+                {reminderEnabled ? (
+                  <Bell size={16} color={COLORS.primary} />
+                ) : (
+                  <BellOff size={16} color={COLORS.textTertiary} />
+                )}
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.calloutTitle}>
+                  Weekly Odometer Reminder ({reminderEnabled ? 'ACTIVE' : 'OFF'})
+                </Text>
+                <Text style={styles.calloutText}>
+                  Dispatches a local reminder notification if your motorcycle odometer has not been updated for 7 consecutive days.
+                </Text>
+                <TouchableOpacity
+                  onPress={handleToggleReminder}
+                  style={styles.reminderToggleBtn}
+                  activeOpacity={0.7}
+                >
+                  <Text style={styles.reminderToggleText}>
+                    {reminderEnabled ? 'Disable 7-Day Reminder' : 'Enable 7-Day Reminder'}
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            </View>
           </View>
         </View>
 
-        {/* Prose Section: Identity */}
+        {/* Prose Section: Identity & Data Privacy */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>III. IDENTITY</Text>
+          <Text style={styles.sectionTitle}>III. IDENTITY & DATA PRIVACY</Text>
           <View style={styles.proseBlock}>
             {isGuest ? (
               <View>
@@ -165,7 +254,7 @@ export default function HelpScreen({ onGoBack }: HelpScreenProps) {
                 </Text>
                 <TouchableOpacity
                   onPress={handleGoogleLogin}
-                  disabled={loadingAuth}
+                  disabled={loadingAuth || deletingData}
                   style={styles.primaryAuthBtn}
                   activeOpacity={0.8}
                   hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
@@ -176,6 +265,27 @@ export default function HelpScreen({ onGoBack }: HelpScreenProps) {
                     <>
                       <User size={16} color={COLORS.bg} strokeWidth={2} />
                       <Text style={styles.primaryAuthBtnText}>Authenticate with Google</Text>
+                    </>
+                  )}
+                </TouchableOpacity>
+
+                <View style={styles.dangerZoneDivider} />
+                <Text style={styles.dangerZoneHint}>
+                  Want to start fresh? You can permanently wipe all vehicles and service records saved in this guest session.
+                </Text>
+                <TouchableOpacity
+                  onPress={handleDeleteAccountAndData}
+                  disabled={loadingAuth || deletingData}
+                  style={styles.deleteDataBtn}
+                  activeOpacity={0.7}
+                  hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                >
+                  {deletingData ? (
+                    <ActivityIndicator color={COLORS.danger} size="small" />
+                  ) : (
+                    <>
+                      <Trash2 size={14} color={COLORS.danger} strokeWidth={2} />
+                      <Text style={styles.deleteDataBtnText}>Wipe Guest Garage Data</Text>
                     </>
                   )}
                 </TouchableOpacity>
@@ -191,19 +301,43 @@ export default function HelpScreen({ onGoBack }: HelpScreenProps) {
                     <Text style={styles.calloutText}>{userEmail}</Text>
                   </View>
                 </View>
+
+                <View style={styles.authActionsRow}>
+                  <TouchableOpacity
+                    onPress={handleLogout}
+                    disabled={loadingAuth || deletingData}
+                    style={styles.signoutBtn}
+                    activeOpacity={0.7}
+                    hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                  >
+                    {loadingAuth ? (
+                      <ActivityIndicator color={COLORS.textPrimary} size="small" />
+                    ) : (
+                      <>
+                        <LogOut size={15} color={COLORS.textPrimary} strokeWidth={2} />
+                        <Text style={styles.signoutBtnText}>Sign Out</Text>
+                      </>
+                    )}
+                  </TouchableOpacity>
+                </View>
+
+                <View style={styles.dangerZoneDivider} />
+                <Text style={styles.dangerZoneHint}>
+                  Account & Data Deletion: Permanently delete your account, all registered motorcycles, and maintenance history from Motofix servers.
+                </Text>
                 <TouchableOpacity
-                  onPress={handleLogout}
-                  disabled={loadingAuth}
-                  style={styles.signoutBtn}
+                  onPress={handleDeleteAccountAndData}
+                  disabled={loadingAuth || deletingData}
+                  style={styles.deleteDataBtn}
                   activeOpacity={0.7}
                   hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
                 >
-                  {loadingAuth ? (
+                  {deletingData ? (
                     <ActivityIndicator color={COLORS.danger} size="small" />
                   ) : (
                     <>
-                      <LogOut size={15} color={COLORS.danger} strokeWidth={2} />
-                      <Text style={styles.signoutBtnText}>Sign Out</Text>
+                      <Trash2 size={14} color={COLORS.danger} strokeWidth={2} />
+                      <Text style={styles.deleteDataBtnText}>Delete Account & All Data</Text>
                     </>
                   )}
                 </TouchableOpacity>
@@ -258,6 +392,23 @@ const getStyles = (COLORS: any) => StyleSheet.create({
   calloutTitle: { fontFamily: FONT_FAMILY.mono, fontSize: 12, color: COLORS.textPrimary, marginBottom: 4, letterSpacing: 0.5 },
   calloutText: { fontFamily: FONT_FAMILY.body, fontSize: 13, color: COLORS.textSecondary, lineHeight: 20 },
 
+  reminderToggleBtn: {
+    marginTop: 12,
+    paddingVertical: 8,
+    paddingHorizontal: 14,
+    borderRadius: 5,
+    borderWidth: 1,
+    borderColor: COLORS.borderStrong,
+    backgroundColor: COLORS.surface,
+    alignSelf: 'flex-start',
+  },
+  reminderToggleText: {
+    fontFamily: FONT_FAMILY.mono,
+    fontSize: 11,
+    color: COLORS.textPrimary,
+    letterSpacing: 0.5,
+  },
+
   primaryAuthBtn: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -277,20 +428,59 @@ const getStyles = (COLORS: any) => StyleSheet.create({
     letterSpacing: 0.5,
   },
 
+  authActionsRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    marginTop: 18,
+  },
+
   signoutBtn: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 7,
-    marginTop: 18,
     paddingHorizontal: 16,
     paddingVertical: 10,
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: COLORS.danger + '50',
+    borderColor: COLORS.borderStrong,
     alignSelf: 'flex-start',
-    backgroundColor: COLORS.dangerContainer + '20',
+    backgroundColor: COLORS.surface,
   },
   signoutBtnText: {
+    fontFamily: FONT_FAMILY.mono,
+    fontSize: 12,
+    fontWeight: '600',
+    color: COLORS.textPrimary,
+    letterSpacing: 0.5,
+  },
+
+  dangerZoneDivider: {
+    height: 1,
+    backgroundColor: COLORS.border,
+    marginTop: 28,
+    marginBottom: 16,
+  },
+  dangerZoneHint: {
+    fontFamily: FONT_FAMILY.body,
+    fontSize: 12,
+    color: COLORS.textTertiary,
+    lineHeight: 18,
+    marginBottom: 12,
+  },
+  deleteDataBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 7,
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: COLORS.danger + '60',
+    backgroundColor: COLORS.dangerContainer + '25',
+    alignSelf: 'flex-start',
+  },
+  deleteDataBtnText: {
     fontFamily: FONT_FAMILY.mono,
     fontSize: 12,
     fontWeight: '600',

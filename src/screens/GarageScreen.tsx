@@ -2,12 +2,13 @@ import React, { useState, useEffect } from 'react';
 import { useTheme } from '../contexts/ThemeContext';
 import {
   View, Text, TextInput, TouchableOpacity, StyleSheet, FlatList,
-  ActivityIndicator, Alert, Modal, Image,
+  ActivityIndicator, Alert, Modal, Image, RefreshControl,
 } from 'react-native';
 import { COLORS, SPACING, FONT_SIZE, BORDER_RADIUS, LABEL_STYLE, FONT_FAMILY, SHADOWS } from '../constants/theme';
-import { getBrandImage, THEME_ICONS } from '../constants/assets';
+import { getBrandImage, EMPTY_STATE_ICONS } from '../constants/assets';
 import { UserVehicle, MasterBrand } from '../types';
 import { vehicleService } from '../services/vehicleService';
+import { authService } from '../services/authService';
 import { HelpCircle, Edit2, Plus, X, Sun, Moon, Monitor, ChevronRight } from 'lucide-react-native';
 import { haptic } from '../utils/haptics';
 
@@ -27,6 +28,8 @@ export default function GarageScreen({ onSelectVehicle, onAddVehicle, onHelp, re
 
   const [vehicles, setVehicles] = useState<UserVehicle[]>([]);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const [isGuest, setIsGuest] = useState(false);
 
   // Edit modal state
   const [editVehicle, setEditVehicle] = useState<UserVehicle | null>(null);
@@ -38,15 +41,38 @@ export default function GarageScreen({ onSelectVehicle, onAddVehicle, onHelp, re
   const [showThemePicker, setShowThemePicker] = useState(false);
   const [savingEdit, setSavingEdit] = useState(false);
 
-  useEffect(() => { loadVehicles(); }, [refreshKey]);
+  useEffect(() => {
+    loadVehicles();
+    checkGuest();
+  }, [refreshKey]);
 
-  const loadVehicles = async () => {
-    setLoading(true);
+  const checkGuest = async () => {
+    try {
+      const anon = await authService.isAnonymous();
+      setIsGuest(anon);
+    } catch {
+      setIsGuest(false);
+    }
+  };
+
+  const loadVehicles = async (showLoadingSpinner: boolean = true) => {
+    if (showLoadingSpinner) setLoading(true);
     try {
       const data = await vehicleService.getVehicles();
       setVehicles(data);
     } catch { Alert.alert('Error', 'Failed to load vehicle data.'); }
-    finally { setLoading(false); }
+    finally { if (showLoadingSpinner) setLoading(false); }
+  };
+
+  const handleRefresh = async () => {
+    haptic.selection();
+    setRefreshing(true);
+    try {
+      await loadVehicles(false);
+      await checkGuest();
+    } finally {
+      setRefreshing(false);
+    }
   };
 
   const openEditModal = async (vehicle: UserVehicle) => {
@@ -168,6 +194,26 @@ export default function GarageScreen({ onSelectVehicle, onAddVehicle, onHelp, re
         </View>
       </View>
 
+      {/* Guest Notice Banner */}
+      {isGuest && (
+        <TouchableOpacity
+          style={styles.guestBanner}
+          onPress={() => {
+            haptic.light();
+            onHelp();
+          }}
+          activeOpacity={0.8}
+          accessibilityRole="button"
+          accessibilityLabel="Guest mode notice. Tap to sign in with Google."
+        >
+          <View style={styles.guestDot} />
+          <Text style={styles.guestBannerText}>
+            You are using Guest Mode. Sign in with Google to backup your garage.
+          </Text>
+          <ChevronRight size={14} color={COLORS.textTertiary} />
+        </TouchableOpacity>
+      )}
+
       {/* Table Headers */}
       {vehicles.length > 0 && (
         <View style={styles.tableHead}>
@@ -184,6 +230,14 @@ export default function GarageScreen({ onSelectVehicle, onAddVehicle, onHelp, re
         keyExtractor={(item) => item.id}
         contentContainerStyle={styles.listContent}
         renderItem={renderVehicleRow}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={handleRefresh}
+            tintColor={COLORS.primary}
+            colors={[COLORS.primary]}
+          />
+        }
         ListFooterComponent={
           <TouchableOpacity
             style={styles.addInlineRow}
@@ -198,6 +252,11 @@ export default function GarageScreen({ onSelectVehicle, onAddVehicle, onHelp, re
         }
         ListEmptyComponent={
           <View style={styles.emptyState}>
+            <Image
+              source={EMPTY_STATE_ICONS.garage}
+              style={{ width: 52, height: 52, tintColor: COLORS.textTertiary, opacity: 0.7, marginBottom: 16 }}
+              resizeMode="contain"
+            />
             <Text style={styles.emptyTitle}>0 records found.</Text>
             <Text style={styles.emptySubtitle}>No vehicles registered in the current index.</Text>
           </View>
@@ -310,6 +369,33 @@ const getStyles = (COLORS: any) => StyleSheet.create({
   },
   indexTitle: { fontFamily: FONT_FAMILY.mono, fontSize: 14, color: COLORS.textPrimary, textTransform: 'uppercase', letterSpacing: 1 },
   ihActions: { flexDirection: 'row', alignItems: 'center' },
+
+  guestBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: COLORS.surface1,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    borderRadius: BORDER_RADIUS.sm,
+    paddingVertical: 10,
+    paddingHorizontal: 14,
+    marginHorizontal: 24,
+    marginBottom: 16,
+  },
+  guestDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: COLORS.warning,
+    marginRight: 10,
+  },
+  guestBannerText: {
+    flex: 1,
+    fontFamily: FONT_FAMILY.body,
+    fontSize: 12,
+    color: COLORS.textSecondary,
+    lineHeight: 16,
+  },
 
   tableHead: { flexDirection: 'row', paddingHorizontal: 24, paddingBottom: 12, borderBottomWidth: 1, borderBottomColor: COLORS.border },
   thText: { fontFamily: FONT_FAMILY.mono, fontSize: 10, color: COLORS.textTertiary, letterSpacing: 1 },

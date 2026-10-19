@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Motofix - Workshop & Directive Screen</title>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@500;700&family=IBM+Plex+Sans:wght@400;600;700&family=Rajdhani:wght@600;700&display=swap" rel="stylesheet">
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background-color: #07090C;
+      color: #EDEFF2;
+      font-family: 'IBM Plex Sans', sans-serif;
+      min-height: 100vh;
+      padding: 24px 20px 100px;
+    }
+    .top-nav {
+      margin-bottom: 32px;
+    }
+    .nav-link {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 13px;
+      color: #8A919B;
+      text-decoration: none;
+      cursor: pointer;
+    }
+    .editorial-header {
+      margin-bottom: 48px;
+    }
+    .editorial-title {
+      font-family: 'Rajdhani', sans-serif;
+      font-size: 40px;
+      font-weight: 700;
+      color: #EDEFF2;
+      line-height: 1.05;
+      letter-spacing: -0.5px;
+      margin-bottom: 24px;
+      text-transform: uppercase;
+    }
+    .pill-button {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      background: #EDEFF2;
+      color: #07090C;
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 13px;
+      font-weight: 700;
+      padding: 14px 24px;
+      border-radius: 999px;
+      text-decoration: none;
+      cursor: pointer;
+      transition: transform 0.1s ease;
+    }
+    .pill-button:hover {
+      background: #FFFFFF;
+    }
+    .pill-caption {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 11px;
+      color: #565C64;
+      margin-top: 10px;
+      margin-left: 4px;
+    }
+    .section-heading {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 11px;
+      letter-spacing: 1.8px;
+      color: #565C64;
+      text-transform: uppercase;
+      margin-bottom: 24px;
+      padding-bottom: 8px;
+      border-bottom: 1px solid #1F242B;
+    }
+    .category-block {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      margin-bottom: 36px;
+    }
+    .cat-title {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 1.5px;
+      color: #1449FF;
+      text-transform: uppercase;
+    }
+    .tip-item {
+      background: #0B0E12;
+      border: 1px solid #181C21;
+      border-radius: 8px;
+      padding: 18px 20px;
+    }
+    .tip-header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 8px;
+    }
+    .tip-icon {
+      color: #EDEFF2;
+      display: flex;
+      align-items: center;
+    }
+    .tip-title {
+      font-family: 'Rajdhani', sans-serif;
+      font-size: 18px;
+      font-weight: 700;
+      color: #EDEFF2;
+      letter-spacing: 0.5px;
+    }
+    .tip-desc {
+      font-size: 13px;
+      color: #8A919B;
+      line-height: 1.5;
+      margin-bottom: 12px;
+    }
+    .tip-tags {
+      display: flex;
+      gap: 8px;
+    }
+    .tip-tag {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 10px;
+      color: #565C64;
+      background: #101317;
+      padding: 3px 8px;
+      border-radius: 3px;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Top Nav -->
+  <div class="top-nav">
+    <a class="nav-link">← Back to Garage</a>
+  </div>
+
+  <!-- Editorial Header -->
+  <div class="editorial-header">
+    <h1 class="editorial-title">WORKSHOP<br>& DIRECTIVE.</h1>
+    <a class="pill-button">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg>
+      Locate Nearby Mechanics
+    </a>
+    <div class="pill-caption">Opens external Google Maps application</div>
+  </div>
+
+  <!-- Playbook Section -->
+  <div class="section-heading">Maintenance Playbook</div>
+
+  <!-- Category: Engine & Fluids -->
+  <div class="category-block">
+    <div class="cat-title">ENGINE & FLUIDS</div>
+
+    <div class="tip-item">
+      <div class="tip-header">
+        <div class="tip-icon">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z"></path></svg>
+        </div>
+        <div class="tip-title">Engine Oil</div>
+      </div>
+      <div class="tip-desc">Change oil every 2,000 - 4,000 km depending on oil grade and riding severity. Depleted oil accelerates piston ring wear.</div>
+      <div class="tip-tags">
+        <span class="tip-tag">#VITAL</span>
+        <span class="tip-tag">#ROUTINE</span>
+      </div>
+    </div>
+
+    <div class="tip-item">
+      <div class="tip-header">
+        <div class="tip-icon">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z"></path></svg>
+        </div>
+        <div class="tip-title">Radiator Coolant</div>
+      </div>
+      <div class="tip-desc">Inspect coolant level every 8,000 km. Depleted coolant leads to sudden engine overheating and head gasket deformation.</div>
+      <div class="tip-tags">
+        <span class="tip-tag">#LIQUID</span>
+      </div>
+    </div>
+
+    <div class="tip-item">
+      <div class="tip-header">
+        <div class="tip-icon">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M9.59 4.59A2 2 0 1 1 11 8H2m10.59 11.41A2 2 0 1 0 14 16H2m15.73-8.27A2.5 2.5 0 1 1 19.5 12H2"></path></svg>
+        </div>
+        <div class="tip-title">Air Filter</div>
+      </div>
+      <div class="tip-desc">Clean at every routine check; replace when clogged (typically around 15,000 km). Ensures stoichiometric air-fuel combustion.</div>
+      <div class="tip-tags">
+        <span class="tip-tag">#FILTER</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Category: Braking System -->
+  <div class="category-block">
+    <div class="cat-title">BRAKING SYSTEM</div>
+
+    <div class="tip-item">
+      <div class="tip-header">
+        <div class="tip-icon">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="10"></circle><rect x="9" y="9" width="6" height="6"></rect></svg>
+        </div>
+        <div class="tip-title">Brake Pads</div>
+      </div>
+      <div class="tip-desc">Inspect pad lining monthly. Replace immediately if squeaking or metallic noise occurs to save disc rotors.</div>
+      <div class="tip-tags">
+        <span class="tip-tag">#SAFETY</span>
+      </div>
+    </div>
+  </div>
+
+</body>
+</html>

@@ -176,11 +176,12 @@ npx eas-cli build -p android --profile production
 
 ## 🔐 Database Schema & Security
 
-Motofix utilizes PostgreSQL on Supabase protected by **Row-Level Security (RLS)**:
+Motofix uses PostgreSQL on Supabase. Current state of the security model, stated plainly:
 
-- Every query is partitioned by `auth.uid()`, preventing cross-tenant data leaks.
-- Anonymous guest identities are issued automatically via `auth.signInAnonymously()`.
-- Users linking Google credentials retain all existing vehicles and telemetry via account consolidation.
+- **Guest sessions** are created with an auto-generated email + password account (`guest_<random>@…`) via `supabase.auth.signUp()`, and the generated email is cached in `AsyncStorage`. This requires **Confirm email = OFF** in Supabase. (It does *not* use `signInAnonymously()`.)
+- **Row-Level Security (RLS)** policies are **not versioned in this repository** and have **not been audited**. Before any public release, export and review the policies for `user_vehicle`, `vehicle_sparepart`, `maintenance_log`, `km_log`, and `master_data`. Every table must be restricted to the owning `auth.uid()`.
+- Odometer monotonicity (no decreasing readings) and "replace at current KM only" are currently enforced **client-side only**. They must be enforced server-side (constraint / RPC) before the app is considered tamper-resistant.
+- Google account linking is available from the in-app manual; see the open issues tracked in the QA report.
 
 ---
 

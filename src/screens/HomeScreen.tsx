@@ -2,12 +2,14 @@ import React, { useState, useCallback, useEffect } from 'react';
 import { useTheme } from '../contexts/ThemeContext';
 import {
   View, Text, TextInput, TouchableOpacity, StyleSheet,
-  FlatList, ActivityIndicator, Alert, RefreshControl,
+  FlatList, ActivityIndicator, Alert, RefreshControl, Image,
 } from 'react-native';
 import { COLORS, SPACING, FONT_SIZE, BORDER_RADIUS, LABEL_STYLE, FONT_FAMILY, SHADOWS } from '../constants/theme';
+import { getSparepartIcon, EMPTY_STATE_ICONS } from '../constants/assets';
 import { UserVehicle, SparepartWithDetails } from '../types';
 import { vehicleService } from '../services/vehicleService';
 import { sparepartService } from '../services/sparepartService';
+import { notificationService } from '../services/notificationService';
 import { validateKmInput } from '../utils/kmCalculator';
 import { haptic } from '../utils/haptics';
 import ReplacementModal from '../components/ReplacementModal';
@@ -52,8 +54,14 @@ export default function HomeScreen({ vehicle, onVehicleUpdate, onNavigateAdd, on
   useEffect(() => { setLoading(true); fetchSpareparts(); }, [fetchSpareparts]);
 
   const handleUpdateKm = async () => {
-    const newKm = parseInt(kmInput);
-    const error = validateKmInput(isNaN(newKm) ? null : newKm, vehicle.current_km);
+    const cleanKm = kmInput.trim();
+    if (!/^\d+$/.test(cleanKm)) {
+      haptic.warning();
+      setKmError('Please enter a valid whole number.');
+      return;
+    }
+    const newKm = parseInt(cleanKm, 10);
+    const error = validateKmInput(newKm, vehicle.current_km);
     if (error) {
       haptic.warning();
       setKmError(error);
@@ -62,12 +70,34 @@ export default function HomeScreen({ vehicle, onVehicleUpdate, onNavigateAdd, on
     setSaving(true);
     setKmError(null);
     try {
-      await vehicleService.updateKm(vehicle.id, newKm);
+      const result = await vehicleService.updateKm(vehicle.id, newKm, vehicle.current_km);
+
+      if (!result.success) {
+        haptic.warning();
+        const latest = result.currentKm ? result.currentKm.toLocaleString() : 'a higher value';
+        Alert.alert(
+          'Odometer Out of Sync',
+          `The odometer was already updated on another device to ${latest} KM. Synchronizing your screen...`,
+          [{ text: 'OK' }]
+        );
+        setShowKmInput(false);
+        setKmInput('');
+        if (onVehicleUpdate) {
+          await onVehicleUpdate();
+        }
+        await fetchSpareparts();
+        return;
+      }
+
       await sparepartService.refreshStatuses(vehicle.id, newKm);
+      notificationService.resetWeeklyInactivityReminder(vehicle.vehicle_name).catch(() => {});
       setKmInput('');
       setShowKmInput(false);
       haptic.success();
-      onVehicleUpdate();
+      if (onVehicleUpdate) {
+        await onVehicleUpdate();
+      }
+      await fetchSpareparts();
     } catch {
       haptic.warning();
       Alert.alert('Error', 'Failed to update odometer.');
@@ -86,11 +116,14 @@ export default function HomeScreen({ vehicle, onVehicleUpdate, onNavigateAdd, on
     if (!selectedSparepart) return;
     try {
       await sparepartService.replaceSparepart(selectedSparepart.id, vehicle.current_km, brandName, selectedSparepart.custom_interval, cost);
+      notificationService.resetWeeklyInactivityReminder(vehicle.vehicle_name).catch(() => {});
       setShowReplaceModal(false);
       setSelectedSparepart(null);
       haptic.success();
+      if (onVehicleUpdate) {
+        await onVehicleUpdate();
+      }
       await fetchSpareparts();
-      onVehicleUpdate();
     } catch {
       haptic.warning();
       Alert.alert('Error', 'Failed to record part replacement.');
@@ -118,10 +151,19 @@ export default function HomeScreen({ vehicle, onVehicleUpdate, onNavigateAdd, on
   };
 
   const overdueItems = spareparts.filter((s) => s.status === 'Overdue');
-  const onRefresh = () => {
+  const onRefresh = async () => {
     haptic.selection();
     setRefreshing(true);
-    onVehicleUpdate();
+    try {
+      if (onVehicleUpdate) {
+        await onVehicleUpdate();
+      }
+      await fetchSpareparts();
+    } catch {
+      // safe fallback
+    } finally {
+      setRefreshing(false);
+    }
   };
   const [historyRefreshKey, setHistoryRefreshKey] = useState(0);
   useEffect(() => { setHistoryRefreshKey((k) => k + 1); }, [vehicle]);
@@ -137,6 +179,11 @@ export default function HomeScreen({ vehicle, onVehicleUpdate, onNavigateAdd, on
     return (
       <View style={[styles.spItem, isOverdue && styles.spItemOverdue]}>
         <View style={styles.spRow}>
+          <Image
+            source={getSparepartIcon(item.master_data?.sparepart_name)}
+            style={{ width: 28, height: 28, tintColor: statusColor, marginRight: 14, opacity: 0.9 }}
+            resizeMode="contain"
+          />
           <View style={{ flex: 1, paddingRight: 16 }}>
             <Text style={[styles.spTitle, isOverdue && { color: COLORS.danger }]}>{item.master_data?.sparepart_name}</Text>
             <Text style={styles.spMeta}>Int: {item.custom_interval.toLocaleString()} km · Last: {item.km_at_setup.toLocaleString()}</Text>
@@ -320,7 +367,11 @@ export default function HomeScreen({ vehicle, onVehicleUpdate, onNavigateAdd, on
           activeTab === 'current' && !loading ? (
             <View style={styles.emptyState}>
               <View style={styles.emptyIconBox}>
-                <Wrench size={26} color={COLORS.textTertiary} strokeWidth={1.5} />
+                <Image
+                  source={EMPTY_STATE_ICONS.parts}
+                  style={{ width: 32, height: 32, tintColor: COLORS.textTertiary }}
+                  resizeMode="contain"
+                />
               </View>
               <Text style={styles.emptyTitle}>NO PARTS TRACKED</Text>
               <Text style={styles.emptyDesc}>

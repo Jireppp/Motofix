@@ -19,6 +19,9 @@ export interface MasterData {
   created_at: string;
 }
 
+export type MasterSparepart = MasterData;
+export type MasterCategory = string;
+
 export interface UserVehicle {
   id: string;
   user_id: string;

@@ -1,12 +1,11 @@
 import React from 'react';
 import { useTheme } from '../contexts/ThemeContext';
 import {
-  View, Text, TouchableOpacity, StyleSheet, ScrollView, Alert, Linking,
+  View, Text, TouchableOpacity, StyleSheet, ScrollView, Alert, Linking, Image,
 } from 'react-native';
 import { COLORS, FONT_FAMILY } from '../constants/theme';
-import {
-  MapPin, Wrench, Droplet, Zap, Wind, StopCircle, CircleDashed, Settings, Link, Battery
-} from 'lucide-react-native';
+import { getSparepartIcon } from '../constants/assets';
+import { MapPin } from 'lucide-react-native';
 import { haptic } from '../utils/haptics';
 
 // Hallmark - genre: modern-minimal - macrostructure: Editorial/Magazine - design-system: none - designed-as-app
@@ -22,47 +21,43 @@ const MAINTENANCE_CATEGORIES = [
   {
     category: 'ENGINE & FLUIDS',
     items: [
-      { iconId: 'droplet', title: 'Engine Oil', desc: 'Change oil every 2,000 - 4,000 km depending on oil grade and riding severity.', tags: ['VITAL', 'ROUTINE'] },
-      { iconId: 'thermometer', title: 'Radiator Coolant', desc: 'Inspect coolant level every 8,000 km. Depleted coolant leads to sudden engine overheating.', tags: ['LIQUID'] },
-      { iconId: 'wind', title: 'Air Filter', desc: 'Clean at every routine check; replace when clogged (typically around 15,000 km).', tags: ['FILTER'] },
+      { iconId: 'engine-oil', title: 'Engine Oil', desc: 'Change oil every 2,000 - 4,000 km depending on oil grade and riding severity.', tags: ['VITAL', 'ROUTINE'] },
+      { iconId: 'radiator-coolant', title: 'Radiator Coolant', desc: 'Inspect coolant level every 8,000 km. Depleted coolant leads to sudden engine overheating.', tags: ['LIQUID'] },
+      { iconId: 'air-filter', title: 'Air Filter', desc: 'Clean at every routine check; replace when clogged (typically around 15,000 km).', tags: ['FILTER'] },
     ]
   },
   {
     category: 'BRAKING SYSTEM',
     items: [
-      { iconId: 'stopcircle', title: 'Brake Pads', desc: 'Inspect pad lining monthly. Replace immediately if squeaking or metallic noise occurs.', tags: ['SAFETY'] },
-      { iconId: 'droplet', title: 'Brake Fluid', desc: 'Flush and replace brake fluid every 20,000 km or 2 years for consistent hydraulic pressure.', tags: ['LIQUID', 'SAFETY'] },
+      { iconId: 'brake-pads', title: 'Brake Pads', desc: 'Inspect pad lining monthly. Replace immediately if squeaking or metallic noise occurs.', tags: ['SAFETY'] },
+      { iconId: 'brake-fluid', title: 'Brake Fluid', desc: 'Flush and replace brake fluid every 20,000 km or 2 years for consistent hydraulic pressure.', tags: ['LIQUID', 'SAFETY'] },
     ]
   },
   {
     category: 'DRIVETRAIN',
     items: [
-      { iconId: 'circledashed', title: 'Drive Belt / Chain', desc: 'Inspect chain tension every 1,000 km. For automatic scooters, replace CVT belt every 20,000 - 25,000 km.', tags: ['CRITICAL'] },
-      { iconId: 'settings', title: 'Gearbox Oil', desc: 'For automatic scooters, refresh gear oil every 8,000 - 10,000 km for silky power transfer.', tags: ['LIQUID'] },
+      { iconId: 'cvt-belt', title: 'Drive Belt / Chain', desc: 'Inspect chain tension every 1,000 km. For automatic scooters, replace CVT belt every 20,000 - 25,000 km.', tags: ['CRITICAL'] },
+      { iconId: 'roller', title: 'CVT Rollers', desc: 'Replace CVT weight rollers every 20,000 km to prevent flat spots and maintain smooth acceleration.', tags: ['TRANSMISSION'] },
+      { iconId: 'gear-oil', title: 'Gearbox Oil', desc: 'For automatic scooters, refresh gear oil every 8,000 - 10,000 km for silky power transfer.', tags: ['LIQUID'] },
     ]
   },
   {
     category: 'ELECTRICAL',
     items: [
       { iconId: 'battery', title: 'Starter Battery', desc: 'Replace battery when electric start hesitates or headlight dims. Typical lifespan is 1.5 - 2 years.', tags: ['POWER'] },
-      { iconId: 'zap', title: 'Spark Plug', desc: 'Replace spark plug every 8,000 - 10,000 km to guarantee crisp ignition and peak fuel efficiency.', tags: ['POWER'] },
+      { iconId: 'spark-plug', title: 'Spark Plug', desc: 'Replace spark plug every 8,000 - 10,000 km to guarantee crisp ignition and peak fuel efficiency.', tags: ['POWER'] },
     ]
   }
 ];
 
 const renderIcon = (id: string, color: string) => {
-  switch (id) {
-    case 'droplet':
-    case 'thermometer': return <Droplet size={20} color={color} strokeWidth={1.5} />;
-    case 'zap': return <Zap size={20} color={color} strokeWidth={1.5} />;
-    case 'wind': return <Wind size={20} color={color} strokeWidth={1.5} />;
-    case 'stopcircle': return <StopCircle size={20} color={color} strokeWidth={1.5} />;
-    case 'circledashed': return <CircleDashed size={20} color={color} strokeWidth={1.5} />;
-    case 'settings': return <Settings size={20} color={color} strokeWidth={1.5} />;
-    case 'link': return <Link size={20} color={color} strokeWidth={1.5} />;
-    case 'battery': return <Battery size={20} color={color} strokeWidth={1.5} />;
-    default: return <Wrench size={20} color={color} strokeWidth={1.5} />;
-  }
+  return (
+    <Image
+      source={getSparepartIcon(id)}
+      style={{ width: 22, height: 22, tintColor: color }}
+      resizeMode="contain"
+    />
+  );
 };
 
 export default function WorkshopScreen({ onGoBack }: WorkshopScreenProps) {

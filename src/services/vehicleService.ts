@@ -1,5 +1,6 @@
 import { supabase } from '../lib/supabase';
 import { UserVehicle, MasterBrand } from '../types';
+import { authService } from './authService';
 
 export const vehicleService = {
   /** Get all vehicles for the current user (with brand info). */
@@ -43,8 +44,13 @@ export const vehicleService = {
     plateNumber: string,
     initialKm: number
   ): Promise<UserVehicle> {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) throw new Error('User not authenticated');
+    let { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      await authService.signInAsGuest();
+      const retryUser = await supabase.auth.getUser();
+      user = retryUser.data.user;
+    }
+    if (!user) throw new Error('User not authenticated. Please restart the app or sign in.');
 
     const { data, error } = await supabase
       .from('user_vehicle')
@@ -62,8 +68,57 @@ export const vehicleService = {
     return data;
   },
 
-  /** Update the current KM and log the update. */
-  async updateKm(vehicleId: string, newKm: number): Promise<void> {
+  /** Alias for createVehicle to maintain backward compatibility. */
+  async addVehicle(
+    brandId: string,
+    vehicleName: string,
+    plateNumber: string,
+    initialKm: number
+  ): Promise<UserVehicle> {
+    return this.createVehicle(brandId, vehicleName, plateNumber, initialKm);
+  },
+
+  /** Update the current KM with concurrency protection and log the update. */
+  async updateKm(
+    vehicleId: string,
+    newKm: number,
+    lastKnownKm?: number
+  ): Promise<{ success: boolean; currentKm?: number; reason?: string }> {
+    // 1. Try atomic database RPC function if installed
+    try {
+      const { data, error } = await supabase.rpc('update_odometer', {
+        p_vehicle_id: vehicleId,
+        p_new_km: newKm,
+        p_last_known_km: lastKnownKm ?? (newKm - 1),
+      });
+
+      if (!error && data) {
+        return data as { success: boolean; currentKm?: number; reason?: string };
+      }
+    } catch {
+      // RPC not installed yet, proceed to robust fallback
+    }
+
+    // 2. Client fallback: verify latest server odometer before writing
+    const { data: currentVehicle, error: fetchError } = await supabase
+      .from('user_vehicle')
+      .select('current_km')
+      .eq('id', vehicleId)
+      .single();
+
+    if (!fetchError && currentVehicle) {
+      if (
+        (lastKnownKm !== undefined && currentVehicle.current_km > lastKnownKm) ||
+        newKm < currentVehicle.current_km
+      ) {
+        return {
+          success: false,
+          currentKm: currentVehicle.current_km,
+          reason: 'ODOMETER_STALE',
+        };
+      }
+    }
+
     const { error: updateError } = await supabase
       .from('user_vehicle')
       .update({
@@ -79,6 +134,8 @@ export const vehicleService = {
       .insert({ vehicle_id: vehicleId, km_value: newKm });
 
     if (logError) throw logError;
+
+    return { success: true, currentKm: newKm };
   },
 
   /** Update vehicle info (name, brand, plate). NOT KM. */
