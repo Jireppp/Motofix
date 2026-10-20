@@ -8,6 +8,7 @@ import { ChevronLeft, Info, AlertTriangle, CheckCircle, User, LogOut, Trash2, Be
 import { supabase } from '../lib/supabase';
 import { authService } from '../services/authService';
 import { notificationService } from '../services/notificationService';
+import { toast } from '../contexts/ToastContext';
 import { haptic } from '../utils/haptics';
 
 // Hallmark - genre: modern-minimal - macrostructure: Long Document - design-system: none - designed-as-app
@@ -50,10 +51,7 @@ export default function HelpScreen({ onGoBack }: HelpScreenProps) {
     setReminderEnabled(nextState);
     const scheduled = await notificationService.setReminderEnabled(nextState);
     if (nextState && !scheduled) {
-      Alert.alert(
-        'Izin Notifikasi Diperlukan',
-        'Aktifkan izin notifikasi untuk Motofix di pengaturan ponsel Anda agar pengingat odometer mingguan dapat berjalan.'
-      );
+      toast.warning('Aktifkan izin notifikasi untuk FXON di pengaturan ponsel agar pengingat mingguan aktif.');
     }
   };
 
@@ -90,7 +88,7 @@ export default function HelpScreen({ onGoBack }: HelpScreenProps) {
       }
     } catch (error: any) {
       haptic.warning();
-      Alert.alert('Login Failed', error.message || 'Could not sign in with Google');
+      toast.error(error.message || 'Could not sign in with Google');
     } finally {
       setLoadingAuth(false);
     }
@@ -107,7 +105,7 @@ export default function HelpScreen({ onGoBack }: HelpScreenProps) {
       onGoBack();
     } catch (error: any) {
       haptic.warning();
-      Alert.alert('Logout Failed', error.message || 'Could not log out');
+      toast.error(error.message || 'Could not log out');
     } finally {
       setLoadingAuth(false);
     }
@@ -118,7 +116,7 @@ export default function HelpScreen({ onGoBack }: HelpScreenProps) {
     const title = isGuest ? 'Wipe Guest Garage Data?' : 'Delete Account & All Data?';
     const message = isGuest
       ? 'This will permanently delete all motorcycles, tracked spareparts, and service history stored in this Guest session. This action cannot be undone.'
-      : 'This will permanently erase all your registered motorcycles, tracked spareparts, and service logs from Motofix servers, and disconnect your Google account. This action cannot be undone.';
+      : 'This will permanently erase all your registered motorcycles, tracked spareparts, and service logs from FXON servers, and disconnect your Google account. This action cannot be undone.';
 
     Alert.alert(title, message, [
       { text: 'Cancel', style: 'cancel' },
@@ -133,16 +131,15 @@ export default function HelpScreen({ onGoBack }: HelpScreenProps) {
             await authService.signInAsGuest();
             haptic.success();
             checkUser();
-            Alert.alert(
-              'Data Erased',
+            toast.info(
               isGuest
                 ? 'All guest garage data has been permanently removed.'
-                : 'Your account and all associated vehicle telemetry data have been permanently deleted.'
+                : 'Your account and all associated telemetry data have been erased.'
             );
             onGoBack();
           } catch (error: any) {
             haptic.warning();
-            Alert.alert('Deletion Failed', error.message || 'Could not complete data deletion.');
+            toast.error(error.message || 'Could not complete data deletion.');
           } finally {
             setDeletingData(false);
           }
@@ -170,7 +167,7 @@ export default function HelpScreen({ onGoBack }: HelpScreenProps) {
         {/* Document Header */}
         <View style={styles.docHeader}>
           <Text style={styles.docTitle}>OPERATING MANUAL</Text>
-          <Text style={styles.docMeta}>MOTOFIX TRACKER // REV.01</Text>
+          <Text style={styles.docMeta}>FXON</Text>
         </View>
 
         {/* Prose Section: Instructions */}
@@ -323,7 +320,7 @@ export default function HelpScreen({ onGoBack }: HelpScreenProps) {
 
                 <View style={styles.dangerZoneDivider} />
                 <Text style={styles.dangerZoneHint}>
-                  Account & Data Deletion: Permanently delete your account, all registered motorcycles, and maintenance history from Motofix servers.
+                  Account & Data Deletion: Permanently delete your account, all registered motorcycles, and maintenance history from FXON servers.
                 </Text>
                 <TouchableOpacity
                   onPress={handleDeleteAccountAndData}

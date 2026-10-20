@@ -1,6 +1,9 @@
 import { supabase } from '../lib/supabase';
 import { GoogleSignin } from '@react-native-google-signin/google-signin';
 
+const GUEST_EMAIL_KEY = 'fxon_guest_email';
+const LEGACY_GUEST_EMAIL_KEY = 'motofix_guest_email';
+
 export const authService = {
   /** Sign up with email and password. */
   async signUp(email: string, password: string) {
@@ -26,7 +29,8 @@ export const authService = {
     }
     try {
       const AsyncStorage = require('@react-native-async-storage/async-storage').default;
-      await AsyncStorage.removeItem('motofix_guest_email');
+      await AsyncStorage.removeItem(GUEST_EMAIL_KEY);
+      await AsyncStorage.removeItem(LEGACY_GUEST_EMAIL_KEY);
     } catch (e) {
       // Ignore
     }
@@ -107,13 +111,15 @@ export const authService = {
 
       // 2. Fallback: Device-scoped guest account so app never blocks when anonymous auth is disabled on Supabase
       const AsyncStorage = require('@react-native-async-storage/async-storage').default;
-      let guestEmail = await AsyncStorage.getItem('motofix_guest_email');
+      let guestEmail =
+        (await AsyncStorage.getItem(GUEST_EMAIL_KEY)) ||
+        (await AsyncStorage.getItem(LEGACY_GUEST_EMAIL_KEY));
       const guestPassword = 'Guest_Motofix_AutoPass123!';
 
       if (!guestEmail) {
         const randomId = Math.random().toString(36).substring(2, 10);
         guestEmail = `guest_${randomId}_${Date.now()}@cekmotor.app`;
-        await AsyncStorage.setItem('motofix_guest_email', guestEmail);
+        await AsyncStorage.setItem(GUEST_EMAIL_KEY, guestEmail);
       }
 
       // Try signIn first
@@ -213,4 +219,3 @@ export const authService = {
     await this.signOut();
   },
 };
-

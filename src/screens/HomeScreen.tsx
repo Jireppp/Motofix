@@ -10,6 +10,7 @@ import { UserVehicle, SparepartWithDetails } from '../types';
 import { vehicleService } from '../services/vehicleService';
 import { sparepartService } from '../services/sparepartService';
 import { notificationService } from '../services/notificationService';
+import { toast } from '../contexts/ToastContext';
 import { validateKmInput } from '../utils/kmCalculator';
 import { haptic } from '../utils/haptics';
 import ReplacementModal from '../components/ReplacementModal';
@@ -47,8 +48,12 @@ export default function HomeScreen({ vehicle, onVehicleUpdate, onNavigateAdd, on
     try {
       const data = await sparepartService.getTrackedSpareparts(vehicle.id, vehicle.current_km);
       setSpareparts(data);
-    } catch { Alert.alert('Error', 'Failed to load tracked parts.'); }
-    finally { setLoading(false); setRefreshing(false); }
+    } catch {
+      toast.error('Failed to load tracked parts.');
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
   }, [vehicle.id, vehicle.current_km]);
 
   useEffect(() => { setLoading(true); fetchSpareparts(); }, [fetchSpareparts]);
@@ -73,12 +78,10 @@ export default function HomeScreen({ vehicle, onVehicleUpdate, onNavigateAdd, on
       const result = await vehicleService.updateKm(vehicle.id, newKm, vehicle.current_km);
 
       if (!result.success) {
-        haptic.warning();
         const latest = result.currentKm ? result.currentKm.toLocaleString() : 'a higher value';
-        Alert.alert(
-          'Odometer Out of Sync',
-          `The odometer was already updated on another device to ${latest} KM. Synchronizing your screen...`,
-          [{ text: 'OK' }]
+        toast.warning(
+          `Odometer was already updated to ${latest} KM on another session. Screen resynchronized.`,
+          'ODOMETER RESYNC'
         );
         setShowKmInput(false);
         setKmInput('');
@@ -93,14 +96,13 @@ export default function HomeScreen({ vehicle, onVehicleUpdate, onNavigateAdd, on
       notificationService.resetWeeklyInactivityReminder(vehicle.vehicle_name).catch(() => {});
       setKmInput('');
       setShowKmInput(false);
-      haptic.success();
+      toast.success('Odometer reading updated.');
       if (onVehicleUpdate) {
         await onVehicleUpdate();
       }
       await fetchSpareparts();
     } catch {
-      haptic.warning();
-      Alert.alert('Error', 'Failed to update odometer.');
+      toast.error('Failed to update odometer.');
     } finally {
       setSaving(false);
     }
@@ -117,16 +119,16 @@ export default function HomeScreen({ vehicle, onVehicleUpdate, onNavigateAdd, on
     try {
       await sparepartService.replaceSparepart(selectedSparepart.id, vehicle.current_km, brandName, selectedSparepart.custom_interval, cost);
       notificationService.resetWeeklyInactivityReminder(vehicle.vehicle_name).catch(() => {});
+      const partName = selectedSparepart.custom_name || selectedSparepart.master_data?.sparepart_name || 'Component';
+      toast.success(`${partName} replacement logged.`);
       setShowReplaceModal(false);
       setSelectedSparepart(null);
-      haptic.success();
       if (onVehicleUpdate) {
         await onVehicleUpdate();
       }
       await fetchSpareparts();
     } catch {
-      haptic.warning();
-      Alert.alert('Error', 'Failed to record part replacement.');
+      toast.error('Failed to record part replacement.');
     }
   };
 
@@ -138,12 +140,11 @@ export default function HomeScreen({ vehicle, onVehicleUpdate, onNavigateAdd, on
         onPress: async () => {
           try {
             await sparepartService.deleteSparepart(sp.id);
-            haptic.success();
+            toast.info('Tracked component removed.');
             await fetchSpareparts();
             onVehicleUpdate();
           } catch {
-            haptic.warning();
-            Alert.alert('Error', 'Failed to remove part.');
+            toast.error('Failed to remove part.');
           }
         },
       }]
@@ -174,18 +175,19 @@ export default function HomeScreen({ vehicle, onVehicleUpdate, onNavigateAdd, on
     const isOverdue = item.status === 'Overdue';
     const isWarning = item.status === 'Warning';
     const statusColor = isOverdue ? COLORS.danger : isWarning ? COLORS.warning : COLORS.textPrimary;
-    const remaining = item.custom_interval - (vehicle.current_km - item.km_at_setup);
+    const remaining = item.remaining_km;
+    const partDisplayName = item.custom_name || item.master_data?.sparepart_name || 'Component';
     
     return (
       <View style={[styles.spItem, isOverdue && styles.spItemOverdue]}>
         <View style={styles.spRow}>
           <Image
-            source={getSparepartIcon(item.master_data?.sparepart_name)}
+            source={getSparepartIcon(partDisplayName)}
             style={{ width: 28, height: 28, tintColor: statusColor, marginRight: 14, opacity: 0.9 }}
             resizeMode="contain"
           />
           <View style={{ flex: 1, paddingRight: 16 }}>
-            <Text style={[styles.spTitle, isOverdue && { color: COLORS.danger }]}>{item.master_data?.sparepart_name}</Text>
+            <Text style={[styles.spTitle, isOverdue && { color: COLORS.danger }]}>{partDisplayName}</Text>
             <Text style={styles.spMeta}>Int: {item.custom_interval.toLocaleString()} km · Last: {item.km_at_setup.toLocaleString()}</Text>
           </View>
           <View style={{ alignItems: 'flex-end' }}>
@@ -193,7 +195,7 @@ export default function HomeScreen({ vehicle, onVehicleUpdate, onNavigateAdd, on
               {isOverdue ? `-${Math.abs(remaining).toLocaleString()}` : remaining.toLocaleString()}
             </Text>
             <Text style={[styles.spStatLabel, isOverdue && { color: COLORS.danger }]}>
-              {isOverdue ? 'OVERDUE' : 'KM LEFT'}
+              {isOverdue ? 'KM OVERDUE' : 'KM LEFT'}
             </Text>
           </View>
         </View>
@@ -310,7 +312,7 @@ export default function HomeScreen({ vehicle, onVehicleUpdate, onNavigateAdd, on
               <View style={styles.alertBox}>
                 <AlertCircle size={16} color={COLORS.danger} />
                 <Text style={styles.alertText}>
-                  {mostCritical.master_data?.sparepart_name} is overdue by {Math.abs((vehicle.current_km - mostCritical.km_at_setup) - mostCritical.custom_interval).toLocaleString()} km.
+                  {mostCritical.custom_name || mostCritical.master_data?.sparepart_name} is overdue by {Math.abs(mostCritical.remaining_km).toLocaleString()} km.
                 </Text>
               </View>
             )}
@@ -395,7 +397,7 @@ export default function HomeScreen({ vehicle, onVehicleUpdate, onNavigateAdd, on
 
       <ReplacementModal
         visible={showReplaceModal}
-        sparepartName={selectedSparepart?.master_data?.sparepart_name || ''}
+        sparepartName={selectedSparepart?.custom_name || selectedSparepart?.master_data?.sparepart_name || ''}
         onConfirm={handleConfirmReplace}
         onCancel={() => { setShowReplaceModal(false); setSelectedSparepart(null); }}
       />
@@ -410,7 +412,7 @@ const getStyles = (COLORS: any) => StyleSheet.create({
   navLink: { fontFamily: FONT_FAMILY.mono, fontSize: 13, color: COLORS.textSecondary },
   navTitle: { fontFamily: FONT_FAMILY.mono, fontSize: 13, color: COLORS.textTertiary, textTransform: 'uppercase', letterSpacing: 1 },
 
-  scrollContent: { paddingBottom: 120 },
+  scrollContent: { paddingBottom: 48 },
   headerBlock: { paddingHorizontal: 24, paddingTop: 20, paddingBottom: 32 },
   
   vehicleName: { fontFamily: FONT_FAMILY.display, fontWeight: '400', fontSize: 24, color: COLORS.textSecondary, marginBottom: 8 },

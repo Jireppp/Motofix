@@ -78,7 +78,7 @@ export const vehicleService = {
     return this.createVehicle(brandId, vehicleName, plateNumber, initialKm);
   },
 
-  /** Update the current KM with concurrency protection and log the update. */
+  /** Update the current KM with concurrency protection and log the update to km_log. */
   async updateKm(
     vehicleId: string,
     newKm: number,
@@ -129,6 +129,7 @@ export const vehicleService = {
 
     if (updateError) throw updateError;
 
+    // 3. Persist historical odometer telemetry in background (km_log)
     const { error: logError } = await supabase
       .from('km_log')
       .insert({ vehicle_id: vehicleId, km_value: newKm });
@@ -157,8 +158,34 @@ export const vehicleService = {
     if (error) throw error;
   },
 
-  /** Delete a vehicle and all its data (cascade). */
+  /** Delete a vehicle and all its dependent telemetry & sparepart records safely. */
   async deleteVehicle(vehicleId: string): Promise<void> {
+    // 1. Clean up maintenance logs for all spareparts of this vehicle
+    const { data: spareparts } = await supabase
+      .from('vehicle_sparepart')
+      .select('id')
+      .eq('vehicle_id', vehicleId);
+
+    const sparepartIds = (spareparts || []).map((sp: any) => sp.id);
+    if (sparepartIds.length > 0) {
+      await supabase
+        .from('maintenance_log')
+        .delete()
+        .in('sparepart_id', sparepartIds);
+    }
+
+    // 2. Clean up vehicle spareparts and km_log
+    await supabase
+      .from('vehicle_sparepart')
+      .delete()
+      .eq('vehicle_id', vehicleId);
+
+    await supabase
+      .from('km_log')
+      .delete()
+      .eq('vehicle_id', vehicleId);
+
+    // 3. Delete the vehicle record itself
     const { error } = await supabase
       .from('user_vehicle')
       .delete()

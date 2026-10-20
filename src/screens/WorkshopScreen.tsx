@@ -1,12 +1,13 @@
 import React from 'react';
 import { useTheme } from '../contexts/ThemeContext';
 import {
-  View, Text, TouchableOpacity, StyleSheet, ScrollView, Alert, Linking, Image,
+  View, Text, TouchableOpacity, StyleSheet, ScrollView, Linking, Image,
 } from 'react-native';
 import { COLORS, FONT_FAMILY } from '../constants/theme';
 import { getSparepartIcon } from '../constants/assets';
 import { MapPin } from 'lucide-react-native';
 import { haptic } from '../utils/haptics';
+import { toast } from '../contexts/ToastContext';
 
 // Hallmark - genre: modern-minimal - macrostructure: Editorial/Magazine - design-system: none - designed-as-app
 // Structural fingerprint: Huge magazine heading, Asymmetric list (left category, right items), Negative space dividers, Pill buttons
@@ -70,9 +71,7 @@ export default function WorkshopScreen({ onGoBack }: WorkshopScreenProps) {
       await Linking.openURL(GOOGLE_MAPS_SEARCH_URL);
     } catch {
       haptic.warning();
-      Alert.alert('Unable to Open Maps', 'Could not launch Google Maps.',
-        [{ text: 'Cancel', style: 'cancel' },
-        { text: 'Open in Browser', onPress: () => Linking.openURL(GOOGLE_MAPS_SEARCH_URL).catch(() => { }) }]);
+      toast.error('Could not launch Google Maps. Check browser or connection.');
     }
   };
 

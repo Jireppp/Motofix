@@ -1,9 +1,9 @@
-# Motofix — Design System & UI Specification
-
+# FXON — Design System & UI Specification
+> **Motto:** *Track the Wear. Master the Ride.*  
 > **Project Target:** Google Stitch (`projects/12359657743223843691`)  
 > **Aesthetic Archetype:** Instrument-Panel Brutalism & Automotive Minimalism  
 > **Platform Target:** React Native / Expo (iOS & Android)  
-> **Source of Truth:** Motofix Production Codebase (`src/constants/theme.ts`)
+> **Source of Truth:** FXON Production Codebase (`src/constants/theme.ts`)
 
 ---
 

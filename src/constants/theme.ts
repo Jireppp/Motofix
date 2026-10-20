@@ -1,4 +1,4 @@
-// ─── MOTOFIX Design System: Instrument-Panel Brutalism ───────────────────
+// ─── FXON Design System: Instrument-Panel Brutalism ───────────────────
 // A dash-mounted diagnostic unit: stamped plates, bolted bezels,
 // split-flap odometer, hazard tape, label-maker tags.
 

@@ -2,9 +2,10 @@ import { Platform } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Notifications from 'expo-notifications';
 
-const WEEKLY_REMINDER_ID = 'motofix-weekly-odo-reminder';
-const REMINDER_ENABLED_KEY = 'motofix_weekly_reminder_enabled';
-const ANDROID_CHANNEL_ID = 'motofix-telemetry-reminders';
+const WEEKLY_REMINDER_ID = 'fxon-weekly-odo-reminder';
+const LEGACY_REMINDER_ID = 'motofix-weekly-odo-reminder';
+const REMINDER_ENABLED_KEY = 'fxon_weekly_reminder_enabled';
+const ANDROID_CHANNEL_ID = 'fxon-telemetry-reminders';
 
 /** 7 days in seconds (7 * 24 * 60 * 60 = 604,800s) */
 export const SEVEN_DAYS_SECONDS = 7 * 24 * 60 * 60;
@@ -31,8 +32,8 @@ export const notificationService = {
     if (Platform.OS !== 'android') return;
     try {
       await Notifications.setNotificationChannelAsync(ANDROID_CHANNEL_ID, {
-        name: 'Pengingat Odometer & Servis',
-        description: 'Pengingat mingguan untuk memperbarui angka kilometer motor Anda',
+        name: 'FXON — Pengingat Odometer & Servis',
+        description: 'Pengingat mingguan FXON untuk memperbarui angka kilometer motor Anda',
         importance: Notifications.AndroidImportance.HIGH,
         vibrationPattern: [0, 250, 200, 250],
         lightColor: '#1449FF',
@@ -100,6 +101,7 @@ export const notificationService = {
     if (Platform.OS === 'web') return;
     try {
       await Notifications.cancelScheduledNotificationAsync(WEEKLY_REMINDER_ID);
+      await Notifications.cancelScheduledNotificationAsync(LEGACY_REMINDER_ID);
     } catch {
       // Ignore if not scheduled
     }
@@ -137,8 +139,8 @@ export const notificationService = {
       const cleanVehicle = vehicleName?.trim();
       const title = 'Motor Jalan Terus, Odometer Jangan Putus';
       const body = cleanVehicle
-        ? `Sudah 7 hari sejak catatan KM ${cleanVehicle} terakhir. Yuk, sesuaikan angka odometer sekarang supaya Motofix bisa memberi tahu sebelum oli atau kampas rem lewat batas!`
-        : 'Sudah 7 hari sejak catatan KM terakhir. Yuk, sesuaikan angka odometer sekarang supaya Motofix bisa memberi tahu sebelum oli atau kampas rem lewat batas!';
+        ? `Sudah 7 hari sejak catatan KM ${cleanVehicle} terakhir. Yuk, sesuaikan angka odometer sekarang supaya FXON bisa memberi tahu sebelum oli atau kampas rem lewat batas!`
+        : 'Sudah 7 hari sejak catatan KM terakhir. Yuk, sesuaikan angka odometer sekarang supaya FXON bisa memberi tahu sebelum oli atau kampas rem lewat batas!';
 
       await Notifications.scheduleNotificationAsync({
         identifier: WEEKLY_REMINDER_ID,

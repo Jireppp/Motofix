@@ -2,11 +2,12 @@ import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { StatusBar } from 'expo-status-bar';
 import {
   StyleSheet, View, Text, BackHandler,
-  Image, Animated, TouchableOpacity,
+  Image, Animated, TouchableOpacity, Easing,
 } from 'react-native';
 import { SafeAreaProvider, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { COLORS, SPACING, FONT_SIZE, BORDER_RADIUS, LABEL_STYLE, FONT_FAMILY } from './src/constants/theme';
 import { ThemeProvider, useTheme } from './src/contexts/ThemeContext';
+import { ToastProvider } from './src/contexts/ToastContext';
 import { authService } from './src/services/authService';
 import { vehicleService } from './src/services/vehicleService';
 import { notificationService } from './src/services/notificationService';
@@ -41,6 +42,8 @@ function AppContent() {
   const [refreshKey, setRefreshKey] = useState(0);
 
   const progressAnim = useRef(new Animated.Value(0)).current;
+  const needleAnim = useRef(new Animated.Value(0)).current;
+  const jitterAnim = useRef(new Animated.Value(0)).current;
   const [loadingPercent, setLoadingPercent] = useState(0);
 
   // ─── Android Hardware Back Button Handler ───
@@ -88,12 +91,46 @@ function AppContent() {
     // Animate splash progress / odometer counter
     Animated.timing(progressAnim, {
       toValue: 1,
-      duration: 2200,
+      duration: 2400,
       useNativeDriver: false,
     }).start();
 
+    // ─── Speedometer Startup Gauge Sweep & Engine Ride Animation ───
+    Animated.sequence([
+      // 1. Ignition Key-ON Sweep up to redline (+128 deg)
+      Animated.timing(needleAnim, {
+        toValue: 1,
+        duration: 650,
+        easing: Easing.out(Easing.cubic),
+        useNativeDriver: true,
+      }),
+      // 2. Return sweep back to zero (-128 deg)
+      Animated.timing(needleAnim, {
+        toValue: 0,
+        duration: 500,
+        easing: Easing.inOut(Easing.quad),
+        useNativeDriver: true,
+      }),
+      // 3. Engine throttle acceleration (climbs with loading progress)
+      Animated.timing(needleAnim, {
+        toValue: 0.88,
+        duration: 1250,
+        easing: Easing.out(Easing.quad),
+        useNativeDriver: true,
+      }),
+    ]).start();
+
+    // Subtle engine throttle idle jitter (vibration)
+    const jitterLoop = Animated.loop(
+      Animated.sequence([
+        Animated.timing(jitterAnim, { toValue: 1, duration: 60, useNativeDriver: true }),
+        Animated.timing(jitterAnim, { toValue: -1, duration: 60, useNativeDriver: true }),
+      ])
+    );
+    jitterLoop.start();
+
     const initApp = async () => {
-      await new Promise(resolve => setTimeout(resolve, 2500));
+      await new Promise(resolve => setTimeout(resolve, 2600));
       checkAuth();
     };
     initApp();
@@ -105,6 +142,7 @@ function AppContent() {
     return () => {
       progressAnim.removeListener(listenerId);
       subscription.unsubscribe();
+      jitterLoop.stop();
     };
   }, []);
 
@@ -131,6 +169,7 @@ function AppContent() {
     try {
       const v = await vehicleService.getVehicles();
       setVehicles(v);
+      setSelectedVehicle((prev) => (prev && v.some((item) => item.id === prev.id) ? prev : null));
       setScreen('garage');
       if (v.length > 0) {
         notificationService.resetWeeklyInactivityReminder(v[0].vehicle_name, true).catch(() => {});
@@ -150,8 +189,15 @@ function AppContent() {
     setVehicles(v);
     if (selectedVehicle) {
       const updated = v.find((item) => item.id === selectedVehicle.id);
-      if (updated) setSelectedVehicle(updated);
+      setSelectedVehicle(updated || null);
     }
+    setRefreshKey((k) => k + 1);
+  };
+
+  const handleVehicleDeleted = async (deletedVehicleId: string) => {
+    setSelectedVehicle((prev) => (prev?.id === deletedVehicleId ? null : prev));
+    const v = await vehicleService.getVehicles();
+    setVehicles(v);
     setRefreshKey((k) => k + 1);
   };
 
@@ -195,20 +241,73 @@ function AppContent() {
   const digitsStr = loadingPercent.toString().padStart(3, '0');
   const odometerDigits = [digitsStr[0], digitsStr[1], digitsStr[2], '%'];
 
+  // Speedometer needle rotation and engine throttle jitter
+  const needleRotate = needleAnim.interpolate({
+    inputRange: [0, 1],
+    outputRange: ['-128deg', '128deg'],
+  });
+
+  const jitterRotate = jitterAnim.interpolate({
+    inputRange: [-1, 1],
+    outputRange: ['-1.5deg', '1.5deg'],
+  });
+
+  // Dynamic simulated speed (reaches ~160 KM/H as motorcycle powers up)
+  const displaySpeed = Math.round(loadingPercent * 1.6);
+
   const renderScreen = () => {
     switch (screen) {
       case 'loading':
         return (
-          <View style={[styles.splashContainer, { paddingTop: Math.max(80, insets.top + 60), paddingBottom: Math.max(48, insets.bottom + 24) }]}>
-            {/* Center-Upper Hero Section */}
-            <View style={styles.splashHero}>
+          <View style={[styles.splashContainer, { paddingTop: Math.max(50, insets.top + 32), paddingBottom: Math.max(36, insets.bottom + 16) }]}>
+            {/* Center-Upper Brand Hero */}
+            <View style={styles.splashBrandHero}>
               <Image
-                source={require('./assets/splash-icon.png')}
-                style={styles.splashLogo}
+                source={require('./assets/icon.png')}
+                style={styles.splashBrandLogo}
                 resizeMode="contain"
               />
-              <Text style={styles.splashTitle}>MOTOFIX</Text>
-              <Text style={styles.splashSubtitle}>MOTORCYCLE MAINTENANCE TRACKER</Text>
+              <Text style={styles.splashTitle}>FXON</Text>
+              <Text style={styles.splashSubtitle}>TRACK THE WEAR. MASTER THE RIDE.</Text>
+            </View>
+
+            {/* Center Animated Speedometer Cluster */}
+            <View style={styles.speedometerCluster}>
+              {/* Dial Arc Image */}
+              <Image
+                source={require('./assets/speedometer-dial.png')}
+                style={styles.speedometerDial}
+                resizeMode="contain"
+              />
+
+              {/* Center Digital Readout */}
+              <View style={styles.speedometerCenter}>
+                <Text style={styles.speedValue}>{displaySpeed}</Text>
+                <Text style={styles.speedUnit}>KM / H</Text>
+              </View>
+
+              {/* Rotating Needle Layer */}
+              <Animated.View
+                pointerEvents="none"
+                style={[
+                  styles.needleContainer,
+                  {
+                    transform: [
+                      { rotate: needleRotate },
+                      { rotate: jitterRotate },
+                    ],
+                  },
+                ]}
+              >
+                {/* Needle Blade */}
+                <View style={styles.needlePointer}>
+                  <View style={styles.needleTip} />
+                </View>
+                {/* Center Pivot Hub */}
+                <View style={styles.needlePivot}>
+                  <View style={styles.needlePivotDot} />
+                </View>
+              </Animated.View>
             </View>
 
             {/* Bottom Minimalist Odometer Cluster */}
@@ -231,6 +330,7 @@ function AppContent() {
               onSelectVehicle={handleSelectVehicle}
               onAddVehicle={() => setScreen('addVehicle')}
               onHelp={() => setScreen('help')}
+              onVehicleDeleted={handleVehicleDeleted}
               refreshKey={refreshKey}
             />
             {renderBottomTabBar()}
@@ -239,15 +339,12 @@ function AppContent() {
 
       case 'vehicleDetail':
         return selectedVehicle ? (
-          <>
-            <HomeScreen
-              vehicle={selectedVehicle}
-              onVehicleUpdate={handleVehicleUpdate}
-              onNavigateAdd={() => setScreen('addSparepart')}
-              onGoBack={handleGoBackToGarage}
-            />
-            {renderBottomTabBar()}
-          </>
+          <HomeScreen
+            vehicle={selectedVehicle}
+            onVehicleUpdate={handleVehicleUpdate}
+            onNavigateAdd={() => setScreen('addSparepart')}
+            onGoBack={handleGoBackToGarage}
+          />
         ) : null;
 
       case 'addVehicle':
@@ -320,7 +417,9 @@ export default function App() {
   return (
     <SafeAreaProvider>
       <ThemeProvider>
-        <AppContent />
+        <ToastProvider>
+          <AppContent />
+        </ToastProvider>
       </ThemeProvider>
     </SafeAreaProvider>
   );
@@ -340,23 +439,22 @@ const getStyles = (COLORS: any) => StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: SPACING.xl,
   },
-  splashHero: {
-    flex: 1,
+  splashBrandHero: {
     alignItems: 'center',
     justifyContent: 'center',
-    transform: [{ translateY: -24 }],
+    marginTop: 8,
   },
-  splashLogo: {
-    width: 140,
-    height: 90,
-    marginBottom: 20,
+  splashBrandLogo: {
+    width: 60,
+    height: 60,
+    marginBottom: 6,
   },
   splashTitle: {
     fontFamily: FONT_FAMILY.display,
-    fontSize: 34,
+    fontSize: 38,
     fontWeight: '700',
     color: COLORS.textPrimary,
-    letterSpacing: 2.5,
+    letterSpacing: 4,
     textTransform: 'uppercase',
   },
   splashSubtitle: {
@@ -364,12 +462,112 @@ const getStyles = (COLORS: any) => StyleSheet.create({
     fontSize: 10,
     letterSpacing: 2,
     color: COLORS.textTertiary,
-    marginTop: 6,
+    marginTop: 4,
     textAlign: 'center',
   },
+
+  // ─── Speedometer Cluster ───
+  speedometerCluster: {
+    width: 250,
+    height: 250,
+    alignItems: 'center',
+    justifyContent: 'center',
+    position: 'relative',
+    marginVertical: 12,
+  },
+  speedometerDial: {
+    width: 250,
+    height: 250,
+  },
+  speedometerCenter: {
+    position: 'absolute',
+    top: 136,
+    left: 0,
+    right: 0,
+    alignItems: 'center',
+    justifyContent: 'center',
+    zIndex: 10,
+  },
+  speedValue: {
+    fontFamily: FONT_FAMILY.display,
+    fontSize: 42,
+    fontWeight: '700',
+    color: COLORS.textPrimary,
+    letterSpacing: -1,
+    lineHeight: 42,
+  },
+  speedUnit: {
+    fontFamily: FONT_FAMILY.monoBold,
+    fontSize: 9.5,
+    letterSpacing: 2,
+    color: COLORS.primary,
+    marginTop: 2,
+  },
+
+  // ─── Needle Mechanics ───
+  needleContainer: {
+    position: 'absolute',
+    width: 250,
+    height: 250,
+    top: -7,
+    left: 0,
+    alignItems: 'center',
+    justifyContent: 'center',
+    zIndex: 20,
+  },
+  needlePointer: {
+    position: 'absolute',
+    top: 47,
+    width: 3.5,
+    height: 78,
+    backgroundColor: COLORS.primary,
+    borderRadius: 2,
+    alignItems: 'center',
+    shadowColor: COLORS.primary,
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.8,
+    shadowRadius: 6,
+    elevation: 4,
+  },
+  needleTip: {
+    width: 5,
+    height: 16,
+    backgroundColor: '#70A4FF',
+    borderRadius: 2,
+  },
+  needlePivot: {
+    width: 16,
+    height: 16,
+    borderRadius: 8,
+    backgroundColor: COLORS.surface1,
+    borderWidth: 2,
+    borderColor: COLORS.primary,
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.4,
+    shadowRadius: 3,
+  },
+  needlePivotDot: {
+    width: 5,
+    height: 5,
+    borderRadius: 2.5,
+    backgroundColor: '#FFFFFF',
+  },
+
   splashLoadingSection: {
     alignItems: 'center',
     justifyContent: 'center',
+    marginBottom: 20,
+  },
+  splashStatusText: {
+    fontFamily: FONT_FAMILY.mono,
+    fontSize: 9.5,
+    letterSpacing: 1.5,
+    color: COLORS.textTertiary,
+    marginTop: 14,
+    textAlign: 'center',
   },
   odometerCluster: {
     flexDirection: 'row',

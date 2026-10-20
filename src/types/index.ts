@@ -13,7 +13,6 @@ export interface MasterData {
   id: string;
   sparepart_name: string;
   default_interval: number;
-  default_time_interval?: number; // in months
   category: string | null;
   icon_name: string;
   created_at: string;
@@ -39,8 +38,8 @@ export interface VehicleSparepart {
   id: string;
   vehicle_id: string;
   master_data_id: string;
+  custom_name?: string | null;
   custom_interval: number;
-  custom_time_interval?: number; // in months
   km_at_setup: number;
   date_at_setup: string;
   status: 'Normal' | 'Warning' | 'Overdue';
@@ -71,7 +70,6 @@ export interface MaintenanceLog {
 export interface SparepartWithDetails extends VehicleSparepart {
   master_data: MasterData;
   remaining_km: number;
-  remaining_months?: number;
 }
 
 export type SparepartStatus = 'Normal' | 'Warning' | 'Overdue';

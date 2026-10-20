@@ -9,6 +9,7 @@ import { getBrandImage, EMPTY_STATE_ICONS } from '../constants/assets';
 import { UserVehicle, MasterBrand } from '../types';
 import { vehicleService } from '../services/vehicleService';
 import { authService } from '../services/authService';
+import { toast } from '../contexts/ToastContext';
 import { HelpCircle, Edit2, Plus, X, Sun, Moon, Monitor, ChevronRight } from 'lucide-react-native';
 import { haptic } from '../utils/haptics';
 
@@ -19,10 +20,17 @@ interface GarageScreenProps {
   onSelectVehicle: (vehicle: UserVehicle) => void;
   onAddVehicle: () => void;
   onHelp: () => void;
+  onVehicleDeleted?: (vehicleId: string) => void;
   refreshKey: number;
 }
 
-export default function GarageScreen({ onSelectVehicle, onAddVehicle, onHelp, refreshKey }: GarageScreenProps) {
+export default function GarageScreen({
+  onSelectVehicle,
+  onAddVehicle,
+  onHelp,
+  onVehicleDeleted,
+  refreshKey,
+}: GarageScreenProps) {
   const { colors: COLORS, mode, setMode } = useTheme();
   const styles = getStyles(COLORS);
 
@@ -60,8 +68,11 @@ export default function GarageScreen({ onSelectVehicle, onAddVehicle, onHelp, re
     try {
       const data = await vehicleService.getVehicles();
       setVehicles(data);
-    } catch { Alert.alert('Error', 'Failed to load vehicle data.'); }
-    finally { if (showLoadingSpinner) setLoading(false); }
+    } catch {
+      toast.error('Failed to load vehicle telemetry index.');
+    } finally {
+      if (showLoadingSpinner) setLoading(false);
+    }
   };
 
   const handleRefresh = async () => {
@@ -88,17 +99,22 @@ export default function GarageScreen({ onSelectVehicle, onAddVehicle, onHelp, re
 
   const handleSaveEdit = async () => {
     if (!editVehicle) return;
-    if (!editName.trim()) { haptic.warning(); Alert.alert('Error', 'Please enter vehicle name.'); return; }
-    if (!editBrandId) { haptic.warning(); Alert.alert('Error', 'Please select vehicle manufacturer.'); return; }
+    if (!editName.trim()) {
+      toast.warning('Please enter vehicle name.');
+      return;
+    }
+    if (!editBrandId) {
+      toast.warning('Please select vehicle manufacturer.');
+      return;
+    }
     setSavingEdit(true);
     try {
       await vehicleService.updateVehicle(editVehicle.id, editBrandId, editName.trim(), editPlate.trim());
-      haptic.success();
+      toast.success('Vehicle record updated.');
       setEditVehicle(null);
       loadVehicles();
     } catch {
-      haptic.warning();
-      Alert.alert('Error', 'Failed to save changes.');
+      toast.error('Failed to save changes.');
     } finally {
       setSavingEdit(false);
     }
@@ -112,11 +128,13 @@ export default function GarageScreen({ onSelectVehicle, onAddVehicle, onHelp, re
         onPress: async () => {
           try {
             await vehicleService.deleteVehicle(vehicle.id);
-            haptic.success();
+            toast.info('Vehicle record removed.');
+            if (onVehicleDeleted) {
+              onVehicleDeleted(vehicle.id);
+            }
             loadVehicles();
           } catch {
-            haptic.warning();
-            Alert.alert('Error', 'Failed to delete vehicle.');
+            toast.error('Failed to delete vehicle.');
           }
         },
       }]
