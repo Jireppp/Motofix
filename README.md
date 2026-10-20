@@ -1,10 +1,10 @@
-# Motofix — Precision Motorcycle Maintenance Tracker
+# FXON — Precision Motorcycle Telemetry & Wear Tracking
 
 <div align="center">
 
-![Motofix Banner](assets/splash-icon.png)
+![FXON Banner](assets/splash-icon.png)
 
-**A high-precision, telemetry-driven motorcycle maintenance tracker built with React Native, Expo, and Supabase.**
+**An engineering-grade, 100% odometer-driven motorcycle maintenance telemetry application built with React Native, Expo SDK 54, TypeScript, and Supabase.**
 
 [![Expo SDK](https://img.shields.io/badge/Expo-SDK%2054-000020?style=for-the-badge&logo=expo&logoColor=white)](https://expo.dev/)
 [![React Native](https://img.shields.io/badge/React%20Native-0.81-61DAFB?style=for-the-badge&logo=react&logoColor=black)](https://reactnative.dev/)
@@ -18,34 +18,65 @@
 
 ## 📌 Overview
 
-**Motofix** is an engineering-first mobile application designed to eliminate maintenance guesswork for motorcycle riders and fleet owners. By synchronizing physical odometer readings with manufacturer-recommended replacement intervals, Motofix delivers real-time component wear telemetry, proactive warnings, and a immutable historical service logbook.
+**FXON** (formerly Motofix) is a high-precision digital cockpit designed to eliminate guesswork from motorcycle ownership. Built with an **Instrument-Panel Brutalism** design language, FXON connects real-world physical odometer readings directly to component wear lifecycles—delivering real-time service countdowns, financial maintenance telemetry, proactive weekly reminder notifications, and an immutable service logbook.
 
-The application adheres to a **Modern-Minimal / Editorial** design language—prioritizing glanceable numerical hierarchy, high-contrast dark/light theming, ergonomic touch targets, tactile haptics, and zero-friction onboarding.
+The application operates on a **100% Pure Odometer-Driven Telemetry** architecture, deliberately omitting arbitrary calendar decay approximations to reflect true mechanical mileage.
 
 ---
 
-## ✨ Key Features
+## ✨ Key Features & Architectural Highlights
 
-- **Fleet & Multi-Vehicle Garage (`GarageScreen`)**
-  - Seamlessly register and manage multiple motorcycles under one account.
-  - Native brand identity integration (Honda, Yamaha, Suzuki, Kawasaki, Vespa, TVS, and custom manufacturers) with theme-adaptive iconography.
-- **Telemetry-Driven Wear Tracking (`HomeScreen`)**
-  - Real-time countdown of remaining kilometers per spare part based on the latest physical odometer input.
-  - Granular status triggers: **Normal** (Optimal), **Warning** (≤ 100 km threshold), and **Overdue** (negative mileage alert).
-- **Master Catalog & Custom Components**
-  - Preloaded with standardized motorcycle intervals (Engine Oil, CVT Belt, Brake Pads, Air Filter, Spark Plug, Coolant, Gear Oil, Rollers).
-  - Support for custom part creation with bespoke replacement cycles.
-- **Ergonomic Tactile Controls & Universal Haptics**
-  - Integrated with `expo-haptics` (and native vibration fallback) for tactile confirmations during mileage updates, component replacements, and tab transitions.
-  - WCAG-compliant touch targets (min. 44×44 pt) designed for effortless single-handed or gloved operation.
-- **Frictionless Hybrid Authentication**
-  - **Instant Guest Mode:** Zero registration wall; creates an anonymous persistent device session immediately upon launch.
-  - **Google Account Binding:** Link Google credentials at any time from the manual to sync fleet data across devices and prevent loss upon app reinstall.
-- **Maintenance Directive & Workshop Finder (`WorkshopScreen`)**
-  - Curated mechanical directive covering vital fluids, drivetrain, braking systems, and electrical components.
-  - Quick launcher to locate certified workshops and mechanics nearby via Google Maps.
-- **Safe Area Inset Resilience**
-  - Native edge-to-edge layout management using `react-native-safe-area-context` to guarantee zero visual collisions with device camera notches, camera holes ("alis"), or navigation gesture bars.
+### 1. 100% Pure Odometer Telemetry Engine
+- **Direct Physical Sync:** Remaining component life is computed strictly from the delta between your active odometer and the last recorded replacement:
+  $$\text{Remaining KM} = \text{Interval KM} - (\text{Current Odo} - \text{Last Service Odo})$$
+- **Granular Wear States:**
+  - `OPTIMAL / OK`: Normal operating window (> 100 KM remaining).
+  - `WARNING`: Approaching replacement threshold (≤ 100 KM remaining).
+  - `OVERDUE`: Exceeded threshold (displayed with exact negative mileage overrun).
+- **Strict Monotonicity:** Enforces forward-only odometer updates to maintain cryptographic integrity of wear cycles.
+
+### 2. Multi-Vehicle Fleet Garage (`GarageScreen`)
+- Register and track multiple motorcycles simultaneously (Honda, Yamaha, Suzuki, Kawasaki, Vespa, TVS, and custom brands).
+- Per-vehicle telemetry dashboards, custom part naming stored directly per vehicle ownership (`vehicle_sparepart.custom_name`), and automatic active vehicle reset handling upon bike deletion.
+
+### 3. Dynamic Service Logbook & Cost Analytics (`HistoryTab`)
+- **Interactive 2-Step Date Filter:** Single dropdown trigger with a clean 2-step modal (Step 1: Select Month / All Time, Step 2: Select Dynamic Year). Zero hardcoding.
+- **Financial Telemetry Accumulator:** Glanceable readout displaying total cumulative maintenance expenses (`TOTAL MAINTENANCE COST: Rp xxx.xxx`) filtered dynamically by selected period.
+- Complete audit trail of replacement history including date, service odometer, cost, notes, and previous wear deltas.
+
+### 4. Custom FXON Toast HUD Notification System
+- Replaces generic, disruptive operating system popups (`Alert.alert`) with an integrated in-app **Instrument-Panel Toast HUD** ([`ToastContext.tsx`](file:///c:/Users/penap/Documents/Project_Fik/Motofix/src/contexts/ToastContext.tsx)).
+- Monospaced diagnostic headers (`ERR //`, `WRN //`, `OK //`, `SYS //`), hairline dark surfaces (`#101317`), colored status indicator strips, safe-area aware slide-down animations, and tactile haptic actuation.
+- Critical destructive actions (e.g., permanent deletion of vehicles, components, or account wipe) strictly retain confirmation dialogues to prevent accidental data loss.
+
+### 5. Proactive Weekly Odometer Reminder
+- Local background reminders powered by `expo-notifications` prompting riders to record their physical odometer every 7 days.
+- Fully configurable with instant opt-in/opt-out switches inside the in-app manual.
+
+### 6. Hybrid Frictionless Authentication (`authService`)
+- **Instant Guest Mode:** Launches immediately into a persistent anonymous session without forcing registration walls.
+- **Google Account Binding:** Seamlessly link a Google account anytime from the Operating Manual to sync multi-device garages and safeguard telemetry data against device resets.
+
+### 7. Mechanical Directives & Workshop Radar (`WorkshopScreen`)
+- Curated engineering reference for engine fluids, braking systems, CVT drivetrains, and electrical circuits.
+- One-touch launcher routing riders directly to certified local mechanics and repair shops via Google Maps.
+
+---
+
+## 🎨 Design System: Instrument-Panel Brutalism
+
+FXON embraces an authentic, high-contrast motorcycle instrument aesthetic:
+- **Cockpit Surfaces:** Deep Onyx (`#07090C`), Metallic Surface Dark (`#101317`), and Hairline Metal Borders (`#1F242D`).
+- **Telemetry Typography:**
+  - `Rajdhani` (Semi-Bold / Bold) — High-impact display headings and speed metrics.
+  - `IBM Plex Mono` (Medium / Bold) — High-precision tabular figures and odometer digits.
+  - `Plus Jakarta Sans` / `IBM Plex Sans` — Ergonomic, glanceable interface copy.
+- **Telemetry Palette:**
+  - `Electric Blue (#1449FF)` — Primary brand accent & active states.
+  - `Amber Alert (#FF9500)` — Warning threshold (≤ 100 KM).
+  - `Hazard Red (#FF3B30)` — Critical overdue state & destructive actions.
+  - `Mechanical Green (#34C759)` — Optimal component health & success confirmations.
+  - `Telemetry Cyan (#00E5FF)` — Informational HUD notifications.
 
 ---
 
@@ -53,14 +84,15 @@ The application adheres to a **Modern-Minimal / Editorial** design language—pr
 
 | Layer | Technology | Details |
 | :--- | :--- | :--- |
-| **Framework** | [React Native](https://reactnative.dev/) via [Expo SDK 54](https://expo.dev/) | Edge-to-edge runtime, New Architecture ready |
-| **Language** | [TypeScript 5.9](https://www.typescriptlang.org/) | Strictly typed components, models, and service interfaces |
-| **Database & Auth** | [Supabase](https://supabase.com/) | PostgreSQL backend with Row-Level Security (RLS) policies |
-| **Local Storage** | [@react-native-async-storage/async-storage](https://github.com/react-native-async-storage/async-storage) | Client-side session and offline preferences |
-| **Typography** | Rajdhani, IBM Plex Mono, IBM Plex Sans | Distinct display figures, monospaced telemetry, and readable copy |
-| **Icons** | [Lucide React Native](https://lucide.dev/) | Clean, scalable vector line icons |
-| **Sensory Feedback** | [expo-haptics](https://docs.expo.dev/versions/latest/sdk/haptics/) | Native Taptic Engine and vibration actuation |
-| **Build System** | [EAS (Expo Application Services)](https://expo.dev/eas) | Cloud-based preview and production AAB/APK pipelines |
+| **Framework** | [React Native 0.81](https://reactnative.dev/) / [Expo SDK 54](https://expo.dev/) | Edge-to-edge runtime with modern gesture and safe-area architecture |
+| **Language** | [TypeScript 5.9](https://www.typescriptlang.org/) | Strictly typed telemetry models, contracts, and service interfaces |
+| **Backend & Database** | [Supabase](https://supabase.com/) | Cloud PostgreSQL with Row-Level Security (RLS) policies |
+| **Authentication** | Supabase Auth + Google Sign-In | Hybrid anonymous device sessions with Google OAuth account binding |
+| **State & Context** | React Context API | `ThemeContext` (adaptive theming) & `ToastContext` (brutalist in-app alerts) |
+| **Local Storage** | [@react-native-async-storage](https://github.com/react-native-async-storage/async-storage) | Persistent device session, active bike selection, and telemetry cache |
+| **Sensory Feedback** | [expo-haptics](https://docs.expo.dev/versions/latest/sdk/haptics/) | Native Taptic Engine & actuator feedback on telemetry adjustments |
+| **Notifications** | [expo-notifications](https://docs.expo.dev/versions/latest/sdk/notifications/) | Local 7-day scheduled odometer reminder triggers |
+| **Build System** | [EAS (Expo Application Services)](https://expo.dev/eas) | Cloud-based preview APK and production AAB compilation |
 
 ---
 
@@ -68,39 +100,44 @@ The application adheres to a **Modern-Minimal / Editorial** design language—pr
 
 ```text
 Motofix/
-├── assets/                       # Visual assets, branding logos, and app icons
-│   ├── images/brands/            # Adaptive brand marks (light/dark variants)
-│   ├── images/icons/             # System and theme switcher icons
-│   └── images/spareparts/        # Component category icons
+├── assets/                       # Branding assets, vector icons, and dial gauges
+│   ├── adaptive-icon.png         # Android adaptive icon (FXON logo)
+│   ├── icon.png                  # Master 1024x1024 application icon
+│   ├── splash-icon.png           # Splash screen logo mark
+│   ├── speedometer-dial.png      # Tachometer / speedometer dial graphics
+│   └── images/                   # Brand logos, sparepart glyphs, and empty states
 ├── src/
-│   ├── components/               # Reusable UI components
-│   │   ├── HistoryTab.tsx        # Service logbook timeline
-│   │   └── ReplacementModal.tsx  # Part replacement logger dialog
-│   ├── constants/                # Theme tokens, master data, and asset registries
+│   ├── components/               # Reusable UI widgets
+│   │   ├── HistoryTab.tsx        # Service logbook timeline & 2-step date/cost filter
+│   │   └── ReplacementModal.tsx  # Component service & replacement modal
+│   ├── constants/                # System constants, theme tokens, and master catalog
 │   │   ├── assets.ts             # Static image mapping and resolvers
-│   │   ├── masterData.ts         # OEM component defaults and intervals
-│   │   └── theme.ts              # Spacing, colors, and typographic tokens
+│   │   ├── masterData.ts         # OEM component defaults & service intervals
+│   │   └── theme.ts              # Spacing, colors, and typographic scale tokens
 │   ├── contexts/                 # Global application contexts
-│   │   └── ThemeContext.tsx      # Dark / Light / System appearance provider
-│   ├── lib/                      # Infrastructure client initializers
-│   │   └── supabase.ts           # Supabase client singleton with .env bindings
+│   │   ├── ThemeContext.tsx      # Dark / Light / System theme provider
+│   │   └── ToastContext.tsx      # FXON Brutalist HUD Toast Notification provider
+│   ├── lib/                      # Infrastructure clients
+│   │   └── supabase.ts           # Supabase client singleton with environment bindings
 │   ├── screens/                  # Application views
 │   │   ├── AddSparepartScreen.tsx # Custom & master part registration
-│   │   ├── AddVehicleScreen.tsx  # Vehicle onboarding
-│   │   ├── GarageScreen.tsx      # Fleet overview and active bike switcher
-│   │   ├── HelpScreen.tsx        # Operating manual & Google OAuth linker
-│   │   ├── HomeScreen.tsx        # Main vehicle telemetry & part status
-│   │   └── WorkshopScreen.tsx    # Maintenance directive & maps locator
+│   │   ├── AddVehicleScreen.tsx  # Motorcycle onboarding
+│   │   ├── ConfigErrorScreen.tsx # Supabase connection error fallback
+│   │   ├── GarageScreen.tsx      # Fleet management & bike selector
+│   │   ├── HelpScreen.tsx        # Operating manual, OAuth binding, & reminder settings
+│   │   ├── HomeScreen.tsx        # Main telemetry dashboard & odometer updater
+│   │   └── WorkshopScreen.tsx    # Mechanical directives & Google Maps radar
 │   ├── services/                 # Data access layer
 │   │   ├── authService.ts        # Guest session & OAuth handling
-│   │   ├── sparepartService.ts   # Part tracking & service calculations
-│   │   └── vehicleService.ts     # Vehicle CRUD operations
+│   │   ├── notificationService.ts # Local weekly odometer reminder scheduler
+│   │   ├── sparepartService.ts   # Component wear queries & replacement logs
+│   │   └── vehicleService.ts     # Multi-vehicle CRUD operations
 │   ├── types/                    # Domain models and TypeScript contracts
 │   └── utils/                    # Computational helpers
 │       ├── haptics.ts            # Universal haptic feedback wrapper
-│       └── kmCalculator.ts       # Odometer validation & wear estimation
+│       └── kmCalculator.ts       # Pure odometer wear & status evaluation
 ├── .env.example                  # Environment configuration template
-├── App.tsx                       # Root container, safe area, and tab navigation
+├── App.tsx                       # Root container, navigation router, and HUD overlay
 ├── app.json                      # Expo application manifest
 └── package.json                  # Dependencies and build scripts
 ```
@@ -111,9 +148,9 @@ Motofix/
 
 ### Prerequisites
 
-- [Node.js](https://nodejs.org/) (v18.x or later recommended)
+- [Node.js](https://nodejs.org/) (v18.x or v20.x LTS recommended)
 - [npm](https://www.npmjs.com/) or [yarn](https://yarnpkg.com/)
-- [Expo Go](https://expo.dev/go) app installed on your physical mobile device (Android / iOS)
+- Physical Android or iOS device with [Expo Go](https://expo.dev/go) installed, or an Android Emulator / iOS Simulator.
 
 ### Installation
 
@@ -129,40 +166,40 @@ Motofix/
    ```
 
 3. **Configure Environment Variables:**
-   Copy the `.env.example` template to `.env` in the root directory:
+   Copy `.env.example` to `.env`:
    ```bash
    cp .env.example .env
    ```
 
-   Populate your credentials inside `.env`:
+   Fill in your Supabase project credentials in `.env`:
    ```env
    EXPO_PUBLIC_SUPABASE_URL=https://your-project-id.supabase.co
    EXPO_PUBLIC_SUPABASE_ANON_KEY=your-supabase-anon-key
    EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID=your-google-oauth-client-id
    ```
 
-4. **Start the Metro Bundler:**
+4. **Start the Development Server:**
    ```bash
    npx expo start
    ```
 
-5. **Launch on Device:**
-   - Scan the terminal QR code using **Expo Go** (Android) or the native Camera app (iOS).
-   - Alternatively, press `a` to open in an Android Emulator or `i` for iOS Simulator.
+5. **Launch the App:**
+   - Scan the QR code with **Expo Go** (Android) or the native Camera app (iOS).
+   - Or press `a` in the terminal to launch on an active Android Emulator.
 
 ---
 
 ## 📦 Production Builds (EAS Build)
 
-The project is preconfigured for [EAS Build](https://docs.expo.dev/build/introduction/).
+The project is fully configured for cloud and local builds using [EAS CLI](https://docs.expo.dev/build/introduction/).
 
 ### Build Standalone Android APK (Preview/Testing):
 
 ```bash
-# 1. Authenticate with Expo CLI
+# 1. Login to your Expo account
 npx expo login
 
-# 2. Trigger Android Preview Build (generates direct APK download)
+# 2. Trigger preview build (direct APK download)
 npx eas-cli build -p android --profile preview
 ```
 
@@ -174,18 +211,21 @@ npx eas-cli build -p android --profile production
 
 ---
 
-## 🔐 Database Schema & Security
+## 🔐 Database & Security Architecture
 
-Motofix uses PostgreSQL on Supabase. Current state of the security model, stated plainly:
+FXON uses PostgreSQL on Supabase with the following data relationships:
+- `user_vehicle`: Motorcycle records linked by `user_id` (plate number, brand, model, active odometer).
+- `vehicle_sparepart`: Component tracking rows per bike, storing `service_interval_km`, `last_service_km`, and `custom_name`.
+- `maintenance_log`: Historical audit records of replaced parts, costs, odometer reading at service, and timestamps.
+- `km_log`: Historical timeline of odometer updates.
 
-- **Guest sessions** are created with an auto-generated email + password account (`guest_<random>@…`) via `supabase.auth.signUp()`, and the generated email is cached in `AsyncStorage`. This requires **Confirm email = OFF** in Supabase. (It does *not* use `signInAnonymously()`.)
-- **Row-Level Security (RLS)** policies are **not versioned in this repository** and have **not been audited**. Before any public release, export and review the policies for `user_vehicle`, `vehicle_sparepart`, `maintenance_log`, `km_log`, and `master_data`. Every table must be restricted to the owning `auth.uid()`.
-- Odometer monotonicity (no decreasing readings) and "replace at current KM only" are currently enforced **client-side only**. They must be enforced server-side (constraint / RPC) before the app is considered tamper-resistant.
-- Google account linking is available from the in-app manual; see the open issues tracked in the QA report.
+> [!IMPORTANT]
+> **Production Security Checklist:**
+> - Ensure Row-Level Security (RLS) is activated on all tables (`user_vehicle`, `vehicle_sparepart`, `maintenance_log`, `km_log`) restricting operations strictly to `auth.uid() = user_id`.
+> - Ensure **Confirm email** is set to **OFF** in Supabase Auth settings to support friction-free guest accounts.
 
 ---
 
 ## 📄 License
 
 This project is licensed under the [MIT License](LICENSE) — see the LICENSE file for details.
-
