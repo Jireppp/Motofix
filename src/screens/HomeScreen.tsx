@@ -2,7 +2,7 @@ import React, { useState, useCallback, useEffect } from 'react';
 import { useTheme } from '../contexts/ThemeContext';
 import {
   View, Text, TextInput, TouchableOpacity, StyleSheet,
-  FlatList, ActivityIndicator, Alert, RefreshControl, Image,
+  FlatList, ActivityIndicator, RefreshControl, Image,
 } from 'react-native';
 import { COLORS, SPACING, FONT_SIZE, BORDER_RADIUS, LABEL_STYLE, FONT_FAMILY, SHADOWS } from '../constants/theme';
 import { getSparepartIcon, EMPTY_STATE_ICONS } from '../constants/assets';
@@ -14,6 +14,7 @@ import { toast } from '../contexts/ToastContext';
 import { validateKmInput } from '../utils/kmCalculator';
 import { haptic } from '../utils/haptics';
 import ReplacementModal from '../components/ReplacementModal';
+import ConfirmModal from '../components/ConfirmModal';
 import HistoryTab from '../components/HistoryTab';
 import { Trash2, AlertTriangle, Wrench, Plus, ChevronLeft, AlertCircle, RotateCcw, Edit3 } from 'lucide-react-native';
 
@@ -43,6 +44,7 @@ export default function HomeScreen({ vehicle, onVehicleUpdate, onNavigateAdd, on
   const [selectedSparepart, setSelectedSparepart] = useState<SparepartWithDetails | null>(null);
   const [showReplaceModal, setShowReplaceModal] = useState(false);
   const [showKmInput, setShowKmInput] = useState(false);
+  const [partToRemove, setPartToRemove] = useState<SparepartWithDetails | null>(null);
 
   const fetchSpareparts = useCallback(async () => {
     try {
@@ -134,21 +136,21 @@ export default function HomeScreen({ vehicle, onVehicleUpdate, onNavigateAdd, on
 
   const handleDelete = (sp: SparepartWithDetails) => {
     haptic.warning();
-    Alert.alert('Remove Tracked Part', 'Are you sure you want to remove this part? All replacement history will be permanently deleted.',
-      [{ text: 'Cancel', style: 'cancel' }, {
-        text: 'Remove', style: 'destructive',
-        onPress: async () => {
-          try {
-            await sparepartService.deleteSparepart(sp.id);
-            toast.info('Tracked component removed.');
-            await fetchSpareparts();
-            onVehicleUpdate();
-          } catch {
-            toast.error('Failed to remove part.');
-          }
-        },
-      }]
-    );
+    setPartToRemove(sp);
+  };
+
+  const confirmRemovePart = async () => {
+    const sp = partToRemove;
+    setPartToRemove(null);
+    if (!sp) return;
+    try {
+      await sparepartService.deleteSparepart(sp.id);
+      toast.info('Tracked component removed.');
+      await fetchSpareparts();
+      onVehicleUpdate();
+    } catch {
+      toast.error('Failed to remove part.');
+    }
   };
 
   const overdueItems = spareparts.filter((s) => s.status === 'Overdue');
@@ -400,6 +402,15 @@ export default function HomeScreen({ vehicle, onVehicleUpdate, onNavigateAdd, on
         sparepartName={selectedSparepart?.custom_name || selectedSparepart?.master_data?.sparepart_name || ''}
         onConfirm={handleConfirmReplace}
         onCancel={() => { setShowReplaceModal(false); setSelectedSparepart(null); }}
+      />
+
+      <ConfirmModal
+        visible={partToRemove !== null}
+        title="Remove Tracked Part"
+        message="Are you sure you want to remove this part? All replacement history will be permanently deleted."
+        confirmLabel="Remove"
+        onConfirm={confirmRemovePart}
+        onCancel={() => setPartToRemove(null)}
       />
     </View>
   );

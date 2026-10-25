@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useTheme } from '../contexts/ThemeContext';
 import {
   View, Text, TextInput, TouchableOpacity, StyleSheet, FlatList,
-  ActivityIndicator, Alert, Modal, Image, RefreshControl,
+  ActivityIndicator, Modal, Image, RefreshControl,
 } from 'react-native';
 import { COLORS, SPACING, FONT_SIZE, BORDER_RADIUS, LABEL_STYLE, FONT_FAMILY, SHADOWS } from '../constants/theme';
 import { getBrandImage, EMPTY_STATE_ICONS } from '../constants/assets';
@@ -12,6 +12,7 @@ import { authService } from '../services/authService';
 import { toast } from '../contexts/ToastContext';
 import { HelpCircle, Edit2, Plus, X, Sun, Moon, Monitor, ChevronRight } from 'lucide-react-native';
 import { haptic } from '../utils/haptics';
+import ConfirmModal from '../components/ConfirmModal';
 
 // Hallmark - genre: modern-minimal - macrostructure: Index-First - design-system: none - designed-as-app
 // Structural fingerprint: Inline heading, Full-bleed rows, Hairline dividers, Typographic-only buttons
@@ -48,6 +49,7 @@ export default function GarageScreen({
   const [showBrandPicker, setShowBrandPicker] = useState(false);
   const [showThemePicker, setShowThemePicker] = useState(false);
   const [savingEdit, setSavingEdit] = useState(false);
+  const [vehicleToDelete, setVehicleToDelete] = useState<UserVehicle | null>(null);
 
   useEffect(() => {
     loadVehicles();
@@ -122,23 +124,24 @@ export default function GarageScreen({
 
   const handleDeleteVehicle = (vehicle: UserVehicle) => {
     haptic.warning();
-    Alert.alert('Delete Vehicle', 'Are you sure you want to delete this vehicle? All tracked parts and service logs will be permanently deleted.',
-      [{ text: 'Cancel', style: 'cancel' }, {
-        text: 'Delete', style: 'destructive',
-        onPress: async () => {
-          try {
-            await vehicleService.deleteVehicle(vehicle.id);
-            toast.info('Vehicle record removed.');
-            if (onVehicleDeleted) {
-              onVehicleDeleted(vehicle.id);
-            }
-            loadVehicles();
-          } catch {
-            toast.error('Failed to delete vehicle.');
-          }
-        },
-      }]
-    );
+    // iOS cannot present a modal while another is still dismissing
+    setTimeout(() => setVehicleToDelete(vehicle), 350);
+  };
+
+  const confirmDeleteVehicle = async () => {
+    const vehicle = vehicleToDelete;
+    setVehicleToDelete(null);
+    if (!vehicle) return;
+    try {
+      await vehicleService.deleteVehicle(vehicle.id);
+      toast.info('Vehicle record removed.');
+      if (onVehicleDeleted) {
+        onVehicleDeleted(vehicle.id);
+      }
+      loadVehicles();
+    } catch {
+      toast.error('Failed to delete vehicle.');
+    }
   };
 
   const selectedBrand = brands.find((b) => b.id === editBrandId);
@@ -325,6 +328,15 @@ export default function GarageScreen({
           </View>
         </View>
       </Modal>
+
+      <ConfirmModal
+        visible={vehicleToDelete !== null}
+        title="Delete Vehicle"
+        message="Are you sure you want to delete this vehicle? All tracked parts and service logs will be permanently deleted."
+        confirmLabel="Delete"
+        onConfirm={confirmDeleteVehicle}
+        onCancel={() => setVehicleToDelete(null)}
+      />
 
       {/* Brand Picker */}
       <Modal visible={showBrandPicker} transparent animationType="fade" onRequestClose={() => setShowBrandPicker(false)}>

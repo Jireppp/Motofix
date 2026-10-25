@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useTheme } from '../contexts/ThemeContext';
 import {
-  View, Text, TouchableOpacity, StyleSheet, ScrollView, ActivityIndicator, Alert, Linking
+  View, Text, TouchableOpacity, StyleSheet, ScrollView, ActivityIndicator, Linking
 } from 'react-native';
 import { PRIVACY_POLICY_URL } from '../constants/legal';
 import { COLORS, SPACING, FONT_SIZE, BORDER_RADIUS, LABEL_STYLE, FONT_FAMILY, SHADOWS } from '../constants/theme';
@@ -11,6 +11,7 @@ import { authService } from '../services/authService';
 import { notificationService } from '../services/notificationService';
 import { toast } from '../contexts/ToastContext';
 import { haptic } from '../utils/haptics';
+import ConfirmModal from '../components/ConfirmModal';
 
 // Hallmark - genre: modern-minimal - macrostructure: Long Document - design-system: none - designed-as-app
 // Structural fingerprint: Hanging heading, Single column, Hairline dividers, Typographic-only buttons
@@ -32,6 +33,7 @@ export default function HelpScreen({ onGoBack }: HelpScreenProps) {
 
   const [loadingAuth, setLoadingAuth] = useState(false);
   const [deletingData, setDeletingData] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [isGuest, setIsGuest] = useState(true);
   const [userEmail, setUserEmail] = useState<string | null>(null);
   const [reminderEnabled, setReminderEnabled] = useState(true);
@@ -123,39 +125,30 @@ export default function HelpScreen({ onGoBack }: HelpScreenProps) {
 
   const handleDeleteAccountAndData = () => {
     haptic.warning();
-    const title = isGuest ? 'Wipe Guest Garage Data?' : 'Delete Account & All Data?';
-    const message = isGuest
-      ? 'This will permanently delete all motorcycles, tracked spareparts, and service history stored in this Guest session. This action cannot be undone.'
-      : 'This will permanently erase all your registered motorcycles, tracked spareparts, and service logs from FXON servers, and disconnect your Google account. This action cannot be undone.';
+    setShowDeleteConfirm(true);
+  };
 
-    Alert.alert(title, message, [
-      { text: 'Cancel', style: 'cancel' },
-      {
-        text: isGuest ? 'Wipe Data' : 'Delete Permanently',
-        style: 'destructive',
-        onPress: async () => {
-          setDeletingData(true);
-          try {
-            await notificationService.cancelWeeklyReminder();
-            await authService.deleteAccountAndData();
-            await authService.signInAsGuest();
-            haptic.success();
-            checkUser();
-            toast.info(
-              isGuest
-                ? 'All guest garage data has been permanently removed.'
-                : 'Your account and all associated telemetry data have been erased.'
-            );
-            onGoBack();
-          } catch (error: any) {
-            haptic.warning();
-            toast.error(error.message || 'Could not complete data deletion.');
-          } finally {
-            setDeletingData(false);
-          }
-        },
-      },
-    ]);
+  const confirmDeleteAccountAndData = async () => {
+    setShowDeleteConfirm(false);
+    setDeletingData(true);
+    try {
+      await notificationService.cancelWeeklyReminder();
+      await authService.deleteAccountAndData();
+      await authService.signInAsGuest();
+      haptic.success();
+      checkUser();
+      toast.info(
+        isGuest
+          ? 'All guest garage data has been permanently removed.'
+          : 'Your account and all associated telemetry data have been erased.'
+      );
+      onGoBack();
+    } catch (error: any) {
+      haptic.warning();
+      toast.error(error.message || 'Could not complete data deletion.');
+    } finally {
+      setDeletingData(false);
+    }
   };
 
   return (
@@ -362,6 +355,19 @@ export default function HelpScreen({ onGoBack }: HelpScreenProps) {
         </View>
 
       </ScrollView>
+
+      <ConfirmModal
+        visible={showDeleteConfirm}
+        title={isGuest ? 'Wipe Guest Garage Data?' : 'Delete Account & All Data?'}
+        message={
+          isGuest
+            ? 'This will permanently delete all motorcycles, tracked spareparts, and service history stored in this Guest session. This action cannot be undone.'
+            : 'This will permanently erase all your registered motorcycles, tracked spareparts, and service logs from FXON servers, and disconnect your Google account. This action cannot be undone.'
+        }
+        confirmLabel={isGuest ? 'Wipe Data' : 'Delete Permanently'}
+        onConfirm={confirmDeleteAccountAndData}
+        onCancel={() => setShowDeleteConfirm(false)}
+      />
     </View>
   );
 }
