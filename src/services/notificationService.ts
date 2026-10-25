@@ -32,8 +32,8 @@ export const notificationService = {
     if (Platform.OS !== 'android') return;
     try {
       await Notifications.setNotificationChannelAsync(ANDROID_CHANNEL_ID, {
-        name: 'FXON — Pengingat Odometer & Servis',
-        description: 'Pengingat mingguan FXON untuk memperbarui angka kilometer motor Anda',
+        name: 'FXON — Odometer & Service Reminders',
+        description: 'Weekly FXON reminder to update your motorcycle odometer reading',
         importance: Notifications.AndroidImportance.HIGH,
         vibrationPattern: [0, 250, 200, 250],
         lightColor: '#1449FF',
@@ -137,10 +137,10 @@ export const notificationService = {
       await this.cancelWeeklyReminder();
 
       const cleanVehicle = vehicleName?.trim();
-      const title = 'Motor Jalan Terus, Odometer Jangan Putus';
+      const title = 'Keep Riding, Keep Your Odometer Updated';
       const body = cleanVehicle
-        ? `Sudah 7 hari sejak catatan KM ${cleanVehicle} terakhir. Yuk, sesuaikan angka odometer sekarang supaya FXON bisa memberi tahu sebelum oli atau kampas rem lewat batas!`
-        : 'Sudah 7 hari sejak catatan KM terakhir. Yuk, sesuaikan angka odometer sekarang supaya FXON bisa memberi tahu sebelum oli atau kampas rem lewat batas!';
+        ? `It has been 7 days since the last odometer update for ${cleanVehicle}. Update it now so FXON can warn you before your oil or brake pads run past their limit!`
+        : 'It has been 7 days since your last odometer update. Update it now so FXON can warn you before your oil or brake pads run past their limit!';
 
       await Notifications.scheduleNotificationAsync({
         identifier: WEEKLY_REMINDER_ID,

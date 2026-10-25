@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { useTheme } from '../contexts/ThemeContext';
 import {
-  View, Text, TouchableOpacity, StyleSheet, ScrollView, ActivityIndicator, Alert
+  View, Text, TouchableOpacity, StyleSheet, ScrollView, ActivityIndicator, Alert, Linking
 } from 'react-native';
+import { PRIVACY_POLICY_URL } from '../constants/legal';
 import { COLORS, SPACING, FONT_SIZE, BORDER_RADIUS, LABEL_STYLE, FONT_FAMILY, SHADOWS } from '../constants/theme';
 import { ChevronLeft, Info, AlertTriangle, CheckCircle, User, LogOut, Trash2, Bell, BellOff } from 'lucide-react-native';
 import { supabase } from '../lib/supabase';
@@ -51,7 +52,16 @@ export default function HelpScreen({ onGoBack }: HelpScreenProps) {
     setReminderEnabled(nextState);
     const scheduled = await notificationService.setReminderEnabled(nextState);
     if (nextState && !scheduled) {
-      toast.warning('Aktifkan izin notifikasi untuk FXON di pengaturan ponsel agar pengingat mingguan aktif.');
+      toast.warning('Enable notification permission for FXON in your phone settings to activate the weekly reminder.');
+    }
+  };
+
+  const handleOpenPrivacyPolicy = async () => {
+    haptic.light();
+    try {
+      await Linking.openURL(PRIVACY_POLICY_URL);
+    } catch {
+      toast.error('Could not open the Privacy Policy. Check your browser or connection.');
     }
   };
 
@@ -244,6 +254,14 @@ export default function HelpScreen({ onGoBack }: HelpScreenProps) {
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>III. IDENTITY & DATA PRIVACY</Text>
           <View style={styles.proseBlock}>
+            <TouchableOpacity
+              onPress={handleOpenPrivacyPolicy}
+              style={styles.privacyLinkBtn}
+              activeOpacity={0.7}
+              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+            >
+              <Text style={styles.privacyLinkText}>Read Privacy Policy ↗</Text>
+            </TouchableOpacity>
             {isGuest ? (
               <View>
                 <Text style={styles.pText}>
@@ -483,6 +501,18 @@ const getStyles = (COLORS: any) => StyleSheet.create({
     fontWeight: '600',
     color: COLORS.danger,
     letterSpacing: 0.5,
+  },
+
+  privacyLinkBtn: {
+    alignSelf: 'flex-start',
+    marginBottom: 20,
+  },
+  privacyLinkText: {
+    fontFamily: FONT_FAMILY.mono,
+    fontSize: 12,
+    color: COLORS.primary,
+    letterSpacing: 0.5,
+    textDecorationLine: 'underline',
   },
 
   identityBound: {

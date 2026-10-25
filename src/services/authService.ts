@@ -201,12 +201,8 @@ export const authService = {
         if (delVehicleErr) throw delVehicleErr;
       }
 
-      // 4. Optional RPC if database has security-definer user purge function
-      try {
-        await supabase.rpc('delete_user_account');
-      } catch {
-        // Proceed cleanly even if custom RPC is not installed
-      }
+      const { error: rpcError } = await supabase.rpc('delete_user_account');
+      if (rpcError) throw rpcError;
     }
 
     // 5. Revoke Google OAuth access & sign out completely

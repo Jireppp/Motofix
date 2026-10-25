@@ -1,0 +1,1765 @@
+<!doctype html>
+<html lang="id">
+<!-- Made with the Bang Motion skill v1.19.0 by Bang Tutorial (https://youtube.com/bangtutorial) - MIT -->
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>FXON — Track the Wear. Master the Ride. (9:16 Promo Motion)</title>
+<!--
+  =====  STYLE BRIEF — FXON 9:16 PROMO MOTION (SKILL.md Hukum #3)  =====
+  Tema/produk + 3 kata sifat : FXON (Precision Motorcycle Maintenance Tracker) — Presisi, Taktil, Sinematik
+  Konsep (opener-konsep.md)  : Kandidat 1: #19 Tur produk berselang klaim
+                               Kandidat 2: #3 Masalah -> lenyap
+                               Kandidat 3: #5 Perjalanan di dalam UI
+                               -> Dipilih: #19 Tur produk berselang klaim (dipadukan pembuka masalah #3)
+                                  Alasan: Keunggulan FXON (hitung mundur KM, garasi multi-motor, logbook & radar bengkel)
+                                  paling meyakinkan saat UI telemetri aslinya terlihat hidup dan bereaksi terhadap angka.
+  Sidik jari struktur        : tur produk berselang klaim · 5 babak kontinu tanpa section-fade ·
+                               tachometer mogok / UI telemetri Vario 160 / karusel 3 kartu garasi di medan terang /
+                               logbook + radar peta bengkel / monolit perangkat + logo FXON ·
+                               in-media-res jarum odometer jatuh di gelap merah · perangkat miring 3D + tombol CTA ditekan
+  Palet (dari brand)         : utama #1449FF (Electric Racing Blue dari assets/icon.png & theme.ts primary)
+                               latar gelap #07090C -> #0E1B4D (Deep Onyx & Navy dari theme.ts bg & primaryContainer)
+                               latar terang #F4F7FB -> #E4ECFF (Titanium Light dari theme.ts lightMinimalistColors)
+                               aksen status #E0A526 (Warning Amber), #E23B34 (Danger Red), #3FA66B (Mechanical Green)
+  Font display / pendamping  : Plus Jakarta Sans (500/600/700 klaim sentence case) + Rajdhani (700 display UI) +
+                               IBM Plex Mono (600/700 angka telemetri tabular-nums)
+  Penekanan teks             : varian box (bingkai sudut teknis menggambar keliling) + warna aksen (opsional, terpilih)
+  Bahasa latar per segmen    : Babak 1 gelap merah darurat (#E23B34) -> Babak 2 gelap biru telemetri (#1449FF/#E0A526) ->
+                               Babak 3 terang titanium (#F4F7FB) dipicu kartu terangkat -> Babak 4 gelap hijau/biru radar ->
+                               Babak 5 panggung monolit #07090C + #1449FF
+  Tanda tangan gerak (objek) : Perangkat & kartu 3D miring (rotateX/Y), angka odometer bergulir deterministik,
+                               kamera mendekat mengikuti klik UI (camTo)
+  Gerak latar (menu §7c)     : #8 Grid perspektif bernapas + #7 Partikel mikro naik pelan + #6 Dial cincin berputar lambat
+  Permukaan latar (menu §7d) : Glow horizon berlapis + spotlight radial + butiran halus deterministik (grainAt)
+  Gaya render objek (§7e)    : Instrument-Panel Brutalism (kaca metalik gelap + garis tepi 1px tajam + lencana taktil)
+  Transisi (menu §4c)        : (1) Emblem FXON 3D berketebalan melewati lensa, (2) Kartu UI terangkat berputar membuka
+                               medan terang, (3) Zoom ke tombol UI yang diklik -> panel mekar, (4) Pull-back 3D ke monolit
+  Momen istimewa             : Kamera menyelam close-up ke layar Honda Vario 160 saat odometer bergulir cepat 12.200 ->
+                               14.500 KM dan memicu perubahan status Oli Mesin (Amber 45 KM) & Kampas Rem (Red Overdue)
+  ==========================================================================
+-->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@500;600;700&family=Plus+Jakarta+Sans:wght@500;600;700;800&family=Rajdhani:wght@600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js"></script>
+<script type="importmap">
+{"imports":{
+  "three":"https://cdn.jsdelivr.net/npm/three@0.161.0/build/three.module.js",
+  "three/addons/":"https://cdn.jsdelivr.net/npm/three@0.161.0/examples/jsm/"
+}}
+</script>
+<style>
+:root{
+  --base:#07090C;
+  --surface1:#101317;
+  --surface2:#181C21;
+  --surface3:#20252B;
+  --border:#262B31;
+  --border-strong:#454C55;
+  --accent:#1449FF;
+  --accent-lit:#688EFF;
+  --accent-deep:#0E1B4D;
+  --ink:#EDEFF2;
+  --ink-muted:#8A919B;
+  --ink-dim:#565C64;
+  --ink-dark:#0D131C;
+  --warn:#E0A526;
+  --warn-bg:#2B2109;
+  --danger:#E23B34;
+  --danger-bg:#2B1412;
+  --success:#3FA66B;
+  --success-bg:#10231A;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{
+  width:100%;height:100%;background:#030406;overflow:hidden;
+  font-family:"Plus Jakarta Sans",system-ui,sans-serif;color:var(--ink);
+  -webkit-font-smoothing:antialiased;user-select:none;
+}
+#filters{position:fixed;width:0;height:0;opacity:0;pointer-events:none}
+
+/* Panggung 9:16 vertikal 1080x1920 */
+#stage{
+  position:fixed;left:50%;top:50%;width:1080px;height:1920px;
+  transform:translate(-50%,-50%) scale(1);overflow:hidden;
+  background:var(--base);
+  box-shadow:0 0 120px rgba(0,0,0,.95);
+}
+#world{position:absolute;inset:0;will-change:transform;transform-origin:0 0}
+#gl{position:absolute;inset:0;width:1080px;height:1920px;display:block}
+
+/* Lapisan permukaan latar kaya (§7d: glow horizon + duotone spotlight + dial cincin) */
+.bgfx{
+  position:absolute;inset:-180px;pointer-events:none;
+  background:
+    radial-gradient(65% 42% at 50% 96%, color-mix(in srgb, var(--accent) 36%, transparent), color-mix(in srgb, var(--accent) 12%, transparent) 52%, transparent 76%),
+    radial-gradient(50% 36% at 50% 22%, color-mix(in srgb, var(--accent-lit) 14%, transparent), transparent 70%);
+  mix-blend-mode:screen;
+}
+.bg-hazard{
+  position:absolute;inset:-180px;pointer-events:none;opacity:0;
+  background:
+    radial-gradient(70% 48% at 50% 88%, rgba(226,59,52,.38), rgba(224,165,38,.12) 52%, transparent 76%),
+    radial-gradient(48% 35% at 50% 25%, rgba(226,59,52,.18), transparent 68%);
+  mix-blend-mode:screen;
+}
+.bg-emerald{
+  position:absolute;inset:-180px;pointer-events:none;opacity:0;
+  background:
+    radial-gradient(70% 45% at 50% 86%, rgba(63,166,107,.30), rgba(20,73,255,.16) 54%, transparent 78%);
+  mix-blend-mode:screen;
+}
+
+/* Cincin instrumen raksasa berputar pelan di latar (§7c #6) */
+.bg-dial-ring{
+  position:absolute;left:50%;top:52%;width:1360px;height:1360px;
+  margin:-680px 0 0 -680px;pointer-events:none;opacity:.13;
+  background:url("assets/speedometer-dial.png") center/contain no-repeat;
+  filter:hue-rotate(-8deg) brightness(1.2);
+}
+
+/* Medan Terang Titanium untuk Babak 3 (kontras gelap-terang §1b & §7b) */
+.paper{
+  position:absolute;inset:-240px;opacity:0;visibility:hidden;pointer-events:none;
+  background:linear-gradient(175deg,#F6F9FE 0%,#EDF3FC 52%,#E2ECFA 100%);
+}
+.paper .b{position:absolute;border-radius:50%;pointer-events:none}
+.paper .b1{left:-180px;top:-120px;width:980px;height:980px;background:radial-gradient(circle,rgba(20,73,255,.18) 0%,transparent 68%)}
+.paper .b2{right:-220px;bottom:80px;width:1050px;height:1050px;background:radial-gradient(circle,rgba(104,142,255,.22) 0%,transparent 66%)}
+.paper .b3{left:180px;top:640px;width:760px;height:760px;background:radial-gradient(circle,rgba(20,73,255,.12) 0%,transparent 66%)}
+.paper-grid{
+  position:absolute;inset:0;opacity:.35;
+  background-image:
+    linear-gradient(to right, rgba(17,20,24,.05) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(17,20,24,.05) 1px, transparent 1px);
+  background-size:60px 60px;
+}
+
+/* Kantong kontras di bawah teks (§1b) */
+.pocket{
+  position:absolute;left:0;right:0;top:0;height:680px;pointer-events:none;
+  background:linear-gradient(180deg,rgba(4,6,10,.88) 0%,rgba(4,6,10,.62) 58%,transparent 100%);
+  z-index:12;
+}
+
+#dom{position:absolute;inset:0;perspective:1500px;transform-style:preserve-3d}
+
+/* Lapisan HUD untuk klaim kalimat pendek (maks 1 kalimat pendek per momen, tanpa titik otomatis) */
+#hud{position:absolute;inset:0;pointer-events:none;z-index:26}
+.claim{
+  position:absolute;left:68px;right:68px;opacity:0;visibility:hidden;
+  font-weight:600;letter-spacing:-.02em;line-height:1.15;color:var(--ink);
+  text-shadow:0 8px 34px rgba(0,0,0,.78);
+}
+.claim.pos-top{top:108px;text-align:left}
+.claim.pos-center-top{top:114px;text-align:center}
+.claim.pos-bottom{bottom:170px;text-align:left}
+.claim.sm{font-size:56px}
+.claim.md{font-size:64px}
+.claim.lg{font-size:74px}
+.claim.xl{font-size:86px;font-weight:700}
+.claim.ink{color:var(--ink-dark);text-shadow:none}
+.claim .sub-line{display:block;margin-top:10px;font-weight:500;color:#B8C2D0}
+.claim.ink .sub-line{color:#3A4659}
+.nowrap{white-space:nowrap;display:inline-block}
+
+.wd{display:inline-block;white-space:nowrap}
+.ch{display:inline-block;will-change:transform,opacity,filter;opacity:0}
+.txt2{display:inline-block;opacity:0}
+
+/* Sorotan kata varian BOX teknis + warna aksen */
+.hl{position:relative;display:inline-block;padding:0 .16em .04em;margin:0 .04em}
+.hl i{
+  position:absolute;inset:-.04em -.08em;
+  border:3px solid var(--accent);border-radius:12px;
+  background:rgba(20,73,255,.16);
+  transform:scaleX(0);transform-origin:0 50%;
+}
+.hl.warn i{border-color:var(--warn);background:rgba(224,165,38,.16)}
+.hl.danger i{border-color:var(--danger);background:rgba(226,59,52,.18)}
+.hl.ink-box i{border-color:var(--accent);background:rgba(20,73,255,.10)}
+.hl-t{position:relative;opacity:0;font-weight:700;color:#fff}
+.claim.ink .hl-t{color:var(--accent)}
+
+/* ================= BABAK 1: CLUSTER SPEEDOMETER MOGOK (0 - 8.15s) ================= */
+#cluster-rig{
+  position:absolute;left:50%;top:1060px;width:860px;height:860px;
+  margin:-430px 0 0 -430px;transform-style:preserve-3d;
+}
+.dial-plate{
+  position:absolute;inset:0;border-radius:50%;
+  background:radial-gradient(circle at 50% 50%, #141922 0%, #090C10 68%, #05070A 100%);
+  border:3px solid #262E38;
+  box-shadow:0 36px 90px rgba(0,0,0,.85), inset 0 0 60px rgba(20,73,255,.15);
+}
+.dial-img{
+  position:absolute;inset:26px;
+  background:url("assets/speedometer-dial.png") center/contain no-repeat;
+  opacity:.92;
+}
+.dial-center{
+  position:absolute;left:50%;top:50%;width:500px;height:500px;
+  margin:-250px 0 0 -250px;border-radius:50%;
+  background:radial-gradient(circle,#11161E 0%,#080A0E 78%);
+  border:2px solid #252C35;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  padding:0 24px;text-align:center;
+}
+.dial-tag{
+  font-family:"IBM Plex Mono",monospace;font-size:25px;font-weight:700;
+  letter-spacing:.12em;color:var(--ink-muted);margin-bottom:8px;text-align:center;
+}
+.dial-speed{
+  font-family:"Rajdhani",sans-serif;font-size:156px;font-weight:700;
+  line-height:.92;color:var(--ink);font-variant-numeric:tabular-nums;
+  min-width:3.2ch;text-align:center;
+}
+.dial-unit{
+  font-family:"IBM Plex Mono",monospace;font-size:32px;font-weight:600;
+  letter-spacing:.2em;color:var(--accent-lit);margin-top:6px;
+}
+.dial-odo-strip{
+  margin-top:24px;padding:10px 26px;border-radius:10px;
+  background:#151A22;border:1px solid #2D3540;
+  font-family:"IBM Plex Mono",monospace;font-size:32px;font-weight:600;
+  color:#C8D0DC;font-variant-numeric:tabular-nums;
+}
+/* Kartu peringatan mogok yang muncul saat kalimat menyebut oli & v-belt */
+.hazard-card{
+  position:absolute;left:50%;width:780px;margin-left:-390px;
+  padding:26px 32px;border-radius:20px;
+  background:rgba(36,15,15,.94);border:2px solid var(--danger);
+  box-shadow:0 24px 60px rgba(226,59,52,.28);
+  display:flex;align-items:center;gap:24px;opacity:0;
+}
+.hazard-card.amber{
+  background:rgba(38,28,10,.94);border-color:var(--warn);
+  box-shadow:0 24px 60px rgba(224,165,38,.24);
+}
+.hazard-card img{width:68px;height:68px;object-fit:contain}
+.hazard-card .hz-title{font-family:"Rajdhani",sans-serif;font-size:46px;font-weight:700;color:#fff;line-height:1.05}
+.hazard-card .hz-sub{font-family:"IBM Plex Mono",monospace;font-size:30px;color:#F6A5A2;margin-top:4px}
+.hazard-card.amber .hz-sub{color:#F5D07A}
+.hazard-card .hz-badge{
+  margin-left:auto;padding:10px 20px;border-radius:10px;
+  font-family:"IBM Plex Mono",monospace;font-size:30px;font-weight:700;
+  background:var(--danger);color:#fff;
+}
+.hazard-card.amber .hz-badge{background:var(--warn);color:#090B0E}
+
+/* ================= PERANGKAT UTAMA: 3D SMARTPHONE RIG (BABAK 2 - 5) ================= */
+#phone-stage{
+  position:absolute;left:50%;top:1105px;width:820px;height:1400px;
+  margin:-700px 0 0 -410px;transform-style:preserve-3d;opacity:0;visibility:hidden;
+}
+.phone-chassis{
+  position:absolute;inset:0;border-radius:64px;
+  background:linear-gradient(145deg,#252B34 0%,#12161C 45%,#090B0E 100%);
+  padding:18px;
+  box-shadow:
+    0 50px 120px rgba(0,0,0,.85),
+    0 0 0 2px #363F4B,
+    0 0 70px rgba(20,73,255,.22);
+  transform-style:preserve-3d;
+}
+.phone-screen{
+  position:relative;width:100%;height:100%;border-radius:48px;
+  background:var(--base);overflow:hidden;border:1px solid #222831;
+}
+.phone-island{
+  position:absolute;left:50%;top:18px;width:190px;height:36px;
+  margin-left:-95px;border-radius:20px;background:#000;z-index:30;
+  border:1px solid #1C2129;
+}
+/* Pembungkus internal layar ponsel yang bisa di-zoom oleh camTo (§8) */
+#phone-ui{
+  position:absolute;inset:0;width:784px;height:1384px;
+  transform-origin:0 0;will-change:transform;
+}
+
+/* --- LAYAR 1: TELEMETRY HOME SCREEN (Honda Vario 160) --- */
+#screen-telemetry{
+  position:absolute;inset:0;padding:74px 36px 36px;
+  background:var(--base);display:flex;flex-direction:column;
+}
+.ui-topnav{
+  display:flex;align-items:center;justify-content:space-between;
+  padding-bottom:20px;border-bottom:1px solid var(--border);
+}
+.ui-brand-pill{
+  display:flex;align-items:center;gap:14px;
+}
+.ui-brand-pill img{width:46px;height:46px;border-radius:10px}
+.ui-brand-pill span{
+  font-family:"Rajdhani",sans-serif;font-size:38px;font-weight:700;
+  letter-spacing:.08em;color:var(--ink);
+}
+.ui-plate{
+  font-family:"IBM Plex Mono",monospace;font-size:30px;font-weight:700;
+  padding:8px 18px;border-radius:8px;background:var(--surface2);
+  border:1px solid var(--border-strong);color:var(--ink);
+}
+.ui-hero-block{
+  margin-top:24px;padding:28px 30px;border-radius:22px;
+  background:linear-gradient(180deg,var(--surface2) 0%,var(--surface1) 100%);
+  border:1px solid var(--border-strong);position:relative;overflow:hidden;
+}
+.ui-bike-row{display:flex;align-items:center;justify-content:space-between}
+.ui-bike-name{
+  font-family:"Rajdhani",sans-serif;font-size:52px;font-weight:700;
+  color:var(--ink);line-height:1;
+}
+.ui-bike-logo{height:44px;object-fit:contain;opacity:.92}
+.ui-odo-label{
+  font-family:"IBM Plex Mono",monospace;font-size:28px;font-weight:600;
+  letter-spacing:.12em;color:var(--ink-muted);margin-top:16px;
+}
+.ui-odo-row{display:flex;align-items:baseline;gap:14px;margin-top:4px}
+.ui-odo-num{
+  font-family:"IBM Plex Mono",monospace;font-size:86px;font-weight:700;
+  color:var(--ink);line-height:1;font-variant-numeric:tabular-nums;
+  min-width:6.2ch;
+}
+.ui-odo-unit{
+  font-family:"Rajdhani",sans-serif;font-size:42px;font-weight:700;
+  color:var(--accent-lit);letter-spacing:.08em;
+}
+.ui-section-tag{
+  font-family:"IBM Plex Mono",monospace;font-size:28px;font-weight:700;
+  letter-spacing:.14em;color:var(--ink-muted);margin:26px 0 14px;
+  display:flex;justify-content:space-between;align-items:center;
+}
+
+/* Kartu Sparepart Asli FXON */
+.sp-card{
+  padding:24px 26px;border-radius:20px;background:var(--surface1);
+  border:2px solid var(--border);margin-bottom:18px;
+  transition:border-color .25s, background .25s;position:relative;
+}
+.sp-row{display:flex;align-items:center;gap:20px}
+.sp-icon-box{
+  width:72px;height:72px;border-radius:16px;background:var(--surface2);
+  border:1px solid var(--border-strong);display:flex;align-items:center;justify-content:center;
+  flex-shrink:0;
+}
+.sp-icon-box img{width:50px;height:50px;object-fit:contain}
+.sp-info{flex:1}
+.sp-name{font-family:"Rajdhani",sans-serif;font-size:44px;font-weight:700;color:var(--ink);line-height:1.05}
+.sp-meta{font-family:"IBM Plex Mono",monospace;font-size:26px;color:var(--ink-muted);margin-top:4px}
+.sp-stat{text-align:right;min-width:170px}
+.sp-km{
+  font-family:"IBM Plex Mono",monospace;font-size:52px;font-weight:700;
+  color:var(--ink);line-height:1;font-variant-numeric:tabular-nums;
+}
+.sp-lbl{
+  font-family:"IBM Plex Mono",monospace;font-size:26px;font-weight:700;
+  letter-spacing:.08em;color:var(--success);margin-top:4px;
+}
+.sp-bar-track{
+  height:12px;border-radius:6px;background:#1C222B;margin-top:18px;overflow:hidden;
+}
+.sp-bar-fill{
+  height:100%;border-radius:6px;background:var(--accent);width:78%;
+  transform-origin:0 50%;
+}
+.sp-actions-row{
+  display:flex;align-items:center;justify-content:space-between;
+  margin-top:16px;padding-top:14px;border-top:1px solid var(--border);
+}
+.sp-btn-replace{
+  padding:10px 24px;border-radius:10px;background:var(--accent);
+  font-family:"IBM Plex Mono",monospace;font-size:28px;font-weight:700;
+  color:#fff;display:inline-flex;align-items:center;gap:10px;
+}
+
+/* Banner Notifikasi Proaktif di dalam UI */
+#ui-proactive-banner{
+  position:absolute;left:24px;right:24px;top:76px;padding:24px 28px;
+  border-radius:20px;background:linear-gradient(135deg,#0E1B4D 0%,#1438B8 100%);
+  border:2px solid var(--accent-lit);
+  box-shadow:0 24px 60px rgba(0,0,0,.75);
+  display:flex;align-items:center;gap:20px;opacity:0;transform:translateY(-60px);
+  z-index:25;
+}
+#ui-proactive-banner img{width:60px;height:60px;border-radius:14px}
+#ui-proactive-banner .pb-title{font-family:"Rajdhani",sans-serif;font-size:40px;font-weight:700;color:#fff;line-height:1.05}
+#ui-proactive-banner .pb-desc{font-family:"Plus Jakarta Sans",sans-serif;font-size:28px;color:#D6E2FF;margin-top:4px}
+
+/* --- LAYAR 2: MULTI-VEHICLE GARAGE (Babak 3, di atas Medan Terang Titanium) --- */
+#garage-stage{
+  position:absolute;left:50%;top:1145px;width:920px;height:1240px;
+  margin:-620px 0 0 -460px;transform-style:preserve-3d;opacity:0;visibility:hidden;
+}
+.garage-card{
+  position:absolute;left:40px;right:40px;height:336px;padding:30px 36px;
+  border-radius:28px;background:#FFFFFF;
+  border:2px solid #D5E0F2;
+  box-shadow:0 28px 68px rgba(14,27,77,.12);
+  display:flex;flex-direction:column;justify-content:space-between;
+  transform-style:preserve-3d;
+}
+.garage-card.active-bike{
+  border:3px solid var(--accent);
+  box-shadow:0 32px 80px rgba(20,73,255,.22);
+}
+.gc-top{display:flex;align-items:flex-start;justify-content:space-between}
+.gc-role{
+  display:inline-block;padding:8px 20px;border-radius:10px;
+  font-family:"IBM Plex Mono",monospace;font-size:28px;font-weight:700;
+  background:#EDF2FF;color:var(--accent);letter-spacing:.08em;
+}
+.gc-name{
+  font-family:"Rajdhani",sans-serif;font-size:60px;font-weight:700;
+  color:var(--ink-dark);margin-top:10px;line-height:1;
+}
+.gc-plate{
+  font-family:"IBM Plex Mono",monospace;font-size:30px;font-weight:600;
+  color:#526075;margin-top:6px;
+}
+.gc-brand-box{
+  width:130px;height:86px;border-radius:16px;background:#0D131C;
+  display:flex;align-items:center;justify-content:center;padding:12px;
+}
+.gc-brand-box img{max-width:100%;max-height:100%;object-fit:contain}
+.gc-bottom{
+  display:flex;align-items:center;justify-content:space-between;
+  padding-top:18px;border-top:2px solid #EEF2F8;
+}
+.gc-odo{
+  font-family:"IBM Plex Mono",monospace;font-size:42px;font-weight:700;
+  color:var(--ink-dark);font-variant-numeric:tabular-nums;
+}
+.gc-health{
+  padding:10px 22px;border-radius:12px;
+  font-family:"IBM Plex Mono",monospace;font-size:30px;font-weight:700;
+  background:#E6F7EE;color:#1D7A46;
+}
+
+/* --- LAYAR 3: SERVICE LOGBOOK & WORKSHOP RADAR (Babak 4) --- */
+#service-stage{
+  position:absolute;left:50%;top:1110px;width:900px;height:1320px;
+  margin:-660px 0 0 -450px;transform-style:preserve-3d;opacity:0;visibility:hidden;
+}
+.logbook-panel{
+  position:absolute;left:20px;right:20px;top:60px;padding:34px 36px;
+  border-radius:28px;background:var(--surface1);border:2px solid var(--border-strong);
+  box-shadow:0 36px 90px rgba(0,0,0,.8);
+}
+.lb-header{
+  display:flex;align-items:center;justify-content:space-between;
+  padding-bottom:22px;border-bottom:1px solid var(--border);
+}
+.lb-title{font-family:"Rajdhani",sans-serif;font-size:48px;font-weight:700;color:var(--ink)}
+.lb-value-badge{
+  padding:10px 22px;border-radius:12px;background:var(--success-bg);
+  border:2px solid var(--success);
+  font-family:"IBM Plex Mono",monospace;font-size:28px;font-weight:700;color:#6CE09A;
+}
+.lb-item{
+  display:flex;align-items:center;gap:22px;padding:22px 0;
+  border-bottom:1px solid var(--border);opacity:0;
+}
+.lb-dot{
+  width:48px;height:48px;border-radius:50%;background:var(--success);
+  color:#06130C;font-size:30px;font-weight:800;
+  display:flex;align-items:center;justify-content:center;flex-shrink:0;
+}
+.lb-info{flex:1}
+.lb-part{font-family:"Rajdhani",sans-serif;font-size:42px;font-weight:700;color:var(--ink);line-height:1.05}
+.lb-meta{font-family:"IBM Plex Mono",monospace;font-size:28px;color:var(--ink-muted);margin-top:4px}
+.lb-km{
+  font-family:"IBM Plex Mono",monospace;font-size:34px;font-weight:700;
+  color:var(--accent-lit);text-align:right;
+}
+
+/* Radar Peta Bengkel Terdekat */
+.radar-panel{
+  position:absolute;left:20px;right:20px;top:210px;height:800px;
+  border-radius:28px;background:#0B121E;border:2px solid var(--accent);
+  box-shadow:0 36px 90px rgba(0,0,0,.92), 0 0 50px rgba(20,73,255,.32);
+  overflow:hidden;opacity:0;
+}
+.radar-svg{position:absolute;inset:0;width:100%;height:100%}
+.workshop-pin{
+  position:absolute;padding:16px 24px;border-radius:16px;
+  background:rgba(16,22,34,.94);border:2px solid var(--accent-lit);
+  box-shadow:0 16px 40px rgba(0,0,0,.7);
+  display:flex;align-items:center;gap:16px;opacity:0;
+}
+.workshop-pin.primary-pin{
+  background:var(--accent);border-color:#fff;
+  box-shadow:0 20px 50px rgba(20,73,255,.65);
+}
+.wp-dot{width:22px;height:22px;border-radius:50%;background:#4EF08E;flex-shrink:0}
+.wp-name{font-family:"Rajdhani",sans-serif;font-size:38px;font-weight:700;color:#fff;line-height:1}
+.wp-dist{font-family:"IBM Plex Mono",monospace;font-size:28px;color:#C4D4FF;margin-top:4px}
+.radar-cta-bar{
+  position:absolute;left:28px;right:28px;bottom:28px;padding:22px 30px;
+  border-radius:18px;background:rgba(10,14,22,.94);border:1px solid var(--border-strong);
+  display:flex;align-items:center;justify-content:space-between;
+}
+.radar-cta-bar span{font-family:"Rajdhani",sans-serif;font-size:40px;font-weight:700;color:#fff}
+.radar-cta-btn{
+  padding:14px 28px;border-radius:12px;background:var(--accent);
+  font-family:"IBM Plex Mono",monospace;font-size:30px;font-weight:700;color:#fff;
+  white-space:nowrap;flex-shrink:0;
+}
+
+/* --- BABAK 5: OUTRO MONOLITH & CTA LOCKUP (41.05 - 50.5s) --- */
+#outro-stage{
+  position:absolute;inset:0;display:flex;flex-direction:column;
+  align-items:center;justify-content:center;padding:80px 64px;
+  opacity:0;visibility:hidden;z-index:24;
+}
+.outro-logo-card{
+  width:250px;height:250px;border-radius:56px;
+  background:#FFFFFF;
+  box-shadow:0 36px 100px rgba(20,73,255,.55), 0 0 0 4px rgba(104,142,255,.4);
+  display:flex;align-items:center;justify-content:center;padding:28px;
+  margin-bottom:38px;
+}
+.outro-logo-card img{width:100%;height:100%;object-fit:contain}
+.outro-wordmark{
+  font-family:"Rajdhani",sans-serif;font-size:148px;font-weight:700;
+  letter-spacing:.12em;color:#FFFFFF;line-height:.92;
+  text-shadow:0 8px 40px rgba(0,0,0,.7);
+}
+.outro-motto{
+  margin-top:22px;font-size:58px;font-weight:600;letter-spacing:-.01em;
+  text-align:center;line-height:1.2;
+}
+.outro-motto .m1{color:var(--ink);opacity:0;display:inline-block}
+.outro-motto .m2{color:var(--accent-lit);opacity:0;display:inline-block}
+.outro-cta-btn{
+  margin-top:56px;padding:30px 68px;border-radius:24px;
+  background:linear-gradient(95deg,#1449FF 0%,#3B6BFF 100%);
+  border:2px solid #88A6FF;
+  box-shadow:0 24px 70px rgba(20,73,255,.6);
+  font-size:52px;font-weight:700;color:#FFFFFF;letter-spacing:-.01em;
+  display:flex;align-items:center;gap:20px;opacity:0;
+}
+.outro-stores{
+  margin-top:38px;display:flex;gap:24px;opacity:0;
+}
+.store-pill{
+  padding:16px 32px;border-radius:16px;background:rgba(24,28,33,.92);
+  border:1px solid var(--border-strong);
+  font-family:"IBM Plex Mono",monospace;font-size:30px;font-weight:600;color:#C8D0DC;
+  display:inline-flex;align-items:center;gap:14px;
+}
+.store-pill svg{width:30px;height:30px;fill:currentColor;flex-shrink:0}
+
+/* Kursor Taktil untuk Interaksi UI */
+#ui-cursor{
+  position:absolute;left:540px;top:960px;width:68px;height:68px;
+  margin:-34px 0 0 -34px;border-radius:50%;
+  background:rgba(255,255,255,.22);border:4px solid #FFFFFF;
+  box-shadow:0 0 30px rgba(20,73,255,.9);
+  pointer-events:none;opacity:0;z-index:28;
+}
+
+/* Emblem 3D Wipe (Object Wipe melewati lensa §4c #3) */
+#emblem-wipe{
+  position:absolute;left:50%;top:50%;width:460px;height:460px;
+  margin:-230px 0 0 -230px;border-radius:96px;background:#FFFFFF;
+  box-shadow:0 40px 140px rgba(20,73,255,.9);
+  display:flex;align-items:center;justify-content:center;padding:54px;
+  opacity:0;pointer-events:none;z-index:35;
+}
+#emblem-wipe img{width:100%;height:100%;object-fit:contain}
+
+/* Butiran halus deterministik & Vignette */
+.grain{
+  position:absolute;inset:-80px;pointer-events:none;
+  background-repeat:repeat;background-size:160px 160px;
+  opacity:.12;mix-blend-mode:overlay;z-index:38;
+}
+.leak{
+  position:absolute;left:50%;top:50%;width:2200px;height:2200px;
+  margin:-1100px 0 0 -1100px;border-radius:50%;
+  background:radial-gradient(circle,rgba(104,142,255,.85),rgba(20,73,255,.45) 36%,transparent 72%);
+  filter:blur(64px);mix-blend-mode:screen;opacity:0;pointer-events:none;z-index:40;
+}
+.vignette{
+  position:absolute;inset:0;pointer-events:none;z-index:30;
+  background:
+    radial-gradient(ellipse 84% 78% at 50% 52%,transparent 48%,rgba(0,0,0,.55) 86%,rgba(0,0,0,.88) 100%);
+}
+
+/* Panel Scrub Developer (?debug=1) */
+#ui{
+  position:fixed;left:50%;bottom:20px;transform:translateX(-50%);
+  display:none;align-items:center;gap:12px;padding:10px 16px;border-radius:14px;
+  background:rgba(12,15,20,.94);border:1px solid rgba(255,255,255,.15);
+  font-size:13px;color:#C8D0DC;z-index:99;
+}
+#ui.on{display:flex}
+#ui button{
+  background:#1F2632;color:#fff;border:1px solid #364152;padding:7px 14px;
+  border-radius:8px;font:inherit;cursor:pointer;
+}
+#scrub{width:280px;accent-color:var(--accent)}
+#clock{font-family:"IBM Plex Mono",monospace;font-variant-numeric:tabular-nums;min-width:5.8ch;text-align:right}
+</style>
+</head>
+<body>
+
+<svg id="filters">
+  <defs></defs>
+</svg>
+
+<div id="stage">
+  <div id="world">
+    <canvas id="gl"></canvas>
+    <div class="bgfx" id="bgfx"></div>
+    <div class="bg-hazard" id="bg-hazard"></div>
+    <div class="bg-emerald" id="bg-emerald"></div>
+    <div class="bg-dial-ring" id="bg-dial-ring"></div>
+
+    <!-- Medan Terang Titanium untuk Babak 3 -->
+    <div class="paper" id="paper">
+      <i class="b b1"></i><i class="b b2"></i><i class="b b3"></i>
+      <div class="paper-grid"></div>
+    </div>
+
+    <div class="pocket" id="pocket"></div>
+
+    <div id="dom">
+      <!-- BABAK 1: CLUSTER SPEEDOMETER & PERINGATAN MOGOK -->
+      <div id="cluster-rig">
+        <div class="dial-plate">
+          <div class="dial-img" id="dial-wheel"></div>
+          <div class="dial-center">
+            <div class="dial-tag" id="dial-tag">RIDING TELEMETRY</div>
+            <div class="dial-speed" id="dial-speed">68</div>
+            <div class="dial-unit" id="dial-unit">KM/H</div>
+            <div class="dial-odo-strip" id="dial-odo">ODO 14,500 KM</div>
+          </div>
+        </div>
+        <!-- Kartu Peringatan Mogok -->
+        <div class="hazard-card amber" id="hz-oil" style="top:720px">
+          <img src="assets/images/spareparts/engine-oil.webp" alt="Oli Mesin">
+          <div>
+            <div class="hz-title">Oli Mesin Kering</div>
+            <div class="hz-sub">Telat servis 480 km</div>
+          </div>
+          <div class="hz-badge">BAHAYA</div>
+        </div>
+        <div class="hazard-card" id="hz-belt" style="top:910px">
+          <img src="assets/images/spareparts/cvt-belt.webp" alt="V-Belt CVT">
+          <div>
+            <div class="hz-title">V-Belt CVT Putus</div>
+            <div class="hz-sub">Melewati batas 20.000 km</div>
+          </div>
+          <div class="hz-badge">MOGOK</div>
+        </div>
+      </div>
+
+      <!-- BABAK 2: 3D SMARTPHONE TELEMETRY (Honda Vario 160) -->
+      <div id="phone-stage">
+        <div class="phone-chassis" id="phone-chassis">
+          <div class="phone-screen">
+            <div class="phone-island"></div>
+            <div id="phone-ui">
+              <div id="screen-telemetry">
+                <div class="ui-topnav">
+                  <div class="ui-brand-pill">
+                    <img src="assets/icon.png" alt="FXON">
+                    <span>FXON</span>
+                  </div>
+                  <div class="ui-plate">B 4821 FXN</div>
+                </div>
+
+                <div class="ui-hero-block">
+                  <div class="ui-bike-row">
+                    <div>
+                      <div class="ui-bike-name">Honda Vario 160</div>
+                      <div class="ui-odo-label">PHYSICAL ODOMETER</div>
+                    </div>
+                    <img class="ui-bike-logo" src="assets/images/brands/Honda_dark.png" alt="Honda">
+                  </div>
+                  <div class="ui-odo-row">
+                    <span class="ui-odo-num" id="ui-odo-val">12,200</span>
+                    <span class="ui-odo-unit">KM</span>
+                  </div>
+                </div>
+
+                <div class="ui-section-tag">
+                  <span>WEAR TELEMETRY</span>
+                  <span style="color:var(--accent-lit)">3 ACTIVE PARTS</span>
+                </div>
+
+                <!-- Sparepart 1: Oli Mesin -->
+                <div class="sp-card" id="sp-oil">
+                  <div class="sp-row">
+                    <div class="sp-icon-box"><img src="assets/images/spareparts/engine-oil.webp" alt="Oli"></div>
+                    <div class="sp-info">
+                      <div class="sp-name" id="sp-oil-name">Oli Mesin</div>
+                      <div class="sp-meta">Int: 2.500 km · Setup: 12.045</div>
+                    </div>
+                    <div class="sp-stat">
+                      <div class="sp-km" id="sp-oil-km">2,345</div>
+                      <div class="sp-lbl" id="sp-oil-lbl">KM LEFT</div>
+                    </div>
+                  </div>
+                  <div class="sp-bar-track"><div class="sp-bar-fill" id="sp-oil-bar"></div></div>
+                </div>
+
+                <!-- Sparepart 2: Kampas Rem -->
+                <div class="sp-card" id="sp-brake">
+                  <div class="sp-row">
+                    <div class="sp-icon-box"><img src="assets/images/spareparts/breake-pads.webp" alt="Rem"></div>
+                    <div class="sp-info">
+                      <div class="sp-name" id="sp-brake-name">Kampas Rem Depan</div>
+                      <div class="sp-meta">Int: 8.000 km · Setup: 6.380</div>
+                    </div>
+                    <div class="sp-stat">
+                      <div class="sp-km" id="sp-brake-km">1,820</div>
+                      <div class="sp-lbl" id="sp-brake-lbl">KM LEFT</div>
+                    </div>
+                  </div>
+                  <div class="sp-bar-track"><div class="sp-bar-fill" id="sp-brake-bar"></div></div>
+                  <div class="sp-actions-row">
+                    <span style="font-family:'IBM Plex Mono',monospace;font-size:26px;color:var(--ink-muted)">STATUS MONITOR</span>
+                    <div class="sp-btn-replace" id="btn-replace-part">↻ Catat Servis</div>
+                  </div>
+                </div>
+
+                <!-- Sparepart 3: V-Belt CVT -->
+                <div class="sp-card" id="sp-belt">
+                  <div class="sp-row">
+                    <div class="sp-icon-box"><img src="assets/images/spareparts/cvt-belt.webp" alt="CVT"></div>
+                    <div class="sp-info">
+                      <div class="sp-name">V-Belt &amp; Roller CVT</div>
+                      <div class="sp-meta">Int: 20.000 km · Setup: 2.000</div>
+                    </div>
+                    <div class="sp-stat">
+                      <div class="sp-km" id="sp-belt-km">9,800</div>
+                      <div class="sp-lbl">KM LEFT</div>
+                    </div>
+                  </div>
+                  <div class="sp-bar-track"><div class="sp-bar-fill" id="sp-belt-bar" style="width:62%"></div></div>
+                </div>
+
+                <!-- Banner Peringatan Proaktif -->
+                <div id="ui-proactive-banner">
+                  <img src="assets/icon.png" alt="FXON Alert">
+                  <div>
+                    <div class="pb-title">Peringatan Dini FXON Aktif</div>
+                    <div class="pb-desc">2 komponen wajib dicek sebelum jalan jauh</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- BABAK 3: MULTI-VEHICLE GARAGE (Di Medan Terang Titanium) -->
+      <div id="garage-stage">
+        <!-- Kartu 1: Motor Harian -->
+        <div class="garage-card active-bike" id="gc-1" style="top:16px">
+          <div class="gc-top">
+            <div>
+              <span class="gc-role">MOTOR HARIAN</span>
+              <div class="gc-name">Honda Vario 160</div>
+              <div class="gc-plate">B 4821 FXN · 2024</div>
+            </div>
+            <div class="gc-brand-box"><img src="assets/images/brands/Honda_dark.png" alt="Honda"></div>
+          </div>
+          <div class="gc-bottom">
+            <div class="gc-odo">14,500 KM</div>
+            <div class="gc-health" id="gc-h1">● 94% OPTIMAL</div>
+          </div>
+        </div>
+
+        <!-- Kartu 2: Motor Touring -->
+        <div class="garage-card" id="gc-2" style="top:384px">
+          <div class="gc-top">
+            <div>
+              <span class="gc-role">MOTOR TOURING</span>
+              <div class="gc-name">Yamaha NMAX Turbo</div>
+              <div class="gc-plate">B 6190 TRG · 2025</div>
+            </div>
+            <div class="gc-brand-box"><img src="assets/images/brands/yamaha_dark.png" alt="Yamaha"></div>
+          </div>
+          <div class="gc-bottom">
+            <div class="gc-odo">28,140 KM</div>
+            <div class="gc-health" id="gc-h2">● SIAP TOURING</div>
+          </div>
+        </div>
+
+        <!-- Kartu 3: Motor Keluarga -->
+        <div class="garage-card" id="gc-3" style="top:752px">
+          <div class="gc-top">
+            <div>
+              <span class="gc-role">MOTOR KELUARGA</span>
+              <div class="gc-name">Vespa Sprint 150</div>
+              <div class="gc-plate">B 3012 VSP · 2024</div>
+            </div>
+            <div class="gc-brand-box"><img src="assets/images/brands/vespa_dark.png" alt="Vespa"></div>
+          </div>
+          <div class="gc-bottom">
+            <div class="gc-odo">8,620 KM</div>
+            <div class="gc-health" id="gc-h3">● SEMUA PRIMA</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- BABAK 4: SERVICE LOGBOOK & WORKSHOP RADAR -->
+      <div id="service-stage">
+        <div class="logbook-panel" id="logbook-panel">
+          <div class="lb-header">
+            <div class="lb-title">Riwayat Servis Terverifikasi</div>
+            <div class="lb-value-badge">▲ HARGA JUAL TERJAGA</div>
+          </div>
+          <div class="lb-item" id="lb-1">
+            <div class="lb-dot">✓</div>
+            <div class="lb-info">
+              <div class="lb-part">Ganti Oli Mesin &amp; Kampas Rem</div>
+              <div class="lb-meta">Shell Advance AX7 · Nissin Original</div>
+            </div>
+            <div class="lb-km">14,500 KM</div>
+          </div>
+          <div class="lb-item" id="lb-2">
+            <div class="lb-dot">✓</div>
+            <div class="lb-info">
+              <div class="lb-part">Servis CVT &amp; Ganti Roller</div>
+              <div class="lb-meta">Honda Genuine Parts · Tercatat Cloud</div>
+            </div>
+            <div class="lb-km">12,000 KM</div>
+          </div>
+          <div class="lb-item" id="lb-3" style="border-bottom:none">
+            <div class="lb-dot">✓</div>
+            <div class="lb-info">
+              <div class="lb-part">Ganti Busi &amp; Filter Udara</div>
+              <div class="lb-meta">NGK Iridium · Bengkel Resmi</div>
+            </div>
+            <div class="lb-km">8,000 KM</div>
+          </div>
+        </div>
+
+        <!-- Panel Radar Bengkel Terdekat -->
+        <div class="radar-panel" id="radar-panel">
+          <svg class="radar-svg" viewBox="0 0 860 780">
+            <defs>
+              <radialGradient id="radarGlow" cx="50%" cy="46%" r="50%">
+                <stop offset="0%" stop-color="#1449FF" stop-opacity="0.38"/>
+                <stop offset="65%" stop-color="#1449FF" stop-opacity="0.08"/>
+                <stop offset="100%" stop-color="#1449FF" stop-opacity="0"/>
+              </radialGradient>
+            </defs>
+            <rect width="860" height="780" fill="#080E18"/>
+            <g stroke="#16243A" stroke-width="2">
+              <line x1="0" y1="150" x2="860" y2="150"/><line x1="0" y1="300" x2="860" y2="300"/>
+              <line x1="0" y1="450" x2="860" y2="450"/><line x1="0" y1="600" x2="860" y2="600"/>
+              <line x1="170" y1="0" x2="170" y2="780"/><line x1="340" y1="0" x2="340" y2="780"/>
+              <line x1="510" y1="0" x2="510" y2="780"/><line x1="680" y1="0" x2="680" y2="780"/>
+            </g>
+            <!-- Jalan Peta -->
+            <path d="M-40 520 Q240 480 430 360 T890 190" fill="none" stroke="#1C2C44" stroke-width="26" stroke-linecap="round"/>
+            <path d="M220 -30 Q360 280 430 360 T640 790" fill="none" stroke="#1C2C44" stroke-width="20" stroke-linecap="round"/>
+            <!-- Lingkaran Radar -->
+            <circle cx="430" cy="360" r="320" fill="url(#radarGlow)" stroke="#1E3A6D" stroke-width="2" stroke-dasharray="10 10"/>
+            <circle cx="430" cy="360" r="200" fill="none" stroke="#244B8E" stroke-width="2"/>
+            <circle cx="430" cy="360" r="95" fill="none" stroke="#2D5FB8" stroke-width="2"/>
+            <!-- Rute Aktif Menuju Bengkel -->
+            <path id="radar-route" d="M430 360 Q495 285 580 220" fill="none" stroke="#3FA66B" stroke-width="10" stroke-linecap="round" stroke-dasharray="260" stroke-dashoffset="260"/>
+            <!-- Titik Posisi Pengguna -->
+            <circle cx="430" cy="360" r="18" fill="#1449FF" stroke="#FFFFFF" stroke-width="6"/>
+          </svg>
+
+          <div class="workshop-pin primary-pin" id="wp-1" style="left:410px;top:110px">
+            <div class="wp-dot"></div>
+            <div>
+              <div class="wp-name">AHASS Resmi Sinergi</div>
+              <div class="wp-dist">0.8 KM · Buka · 4.9★</div>
+            </div>
+          </div>
+
+          <div class="workshop-pin" id="wp-2" style="left:58px;top:240px">
+            <div class="wp-dot" style="background:var(--accent-lit)"></div>
+            <div>
+              <div class="wp-name">MotoCare Pro Garage</div>
+              <div class="wp-dist">1.4 KM · Spesialis Matic</div>
+            </div>
+          </div>
+
+          <div class="workshop-pin" id="wp-3" style="left:440px;top:430px">
+            <div class="wp-dot" style="background:var(--accent-lit)"></div>
+            <div>
+              <div class="wp-name">Sentra Servis Resmi</div>
+              <div class="wp-dist">2.1 KM · Tersedia</div>
+            </div>
+          </div>
+
+          <div class="radar-cta-bar">
+            <span>Navigasi Instan Google Maps</span>
+            <div class="radar-cta-btn" id="radar-btn">1-Klik Rute →</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- BABAK 5: OUTRO BRAND LOCKUP & CTA -->
+      <div id="outro-stage">
+        <div class="outro-logo-card" id="outro-logo">
+          <img src="assets/icon.png" alt="FXON Logo">
+        </div>
+        <div class="outro-wordmark" id="outro-wordmark">FXON</div>
+        <div class="outro-motto">
+          <span class="m1" id="motto-1">Track the Wear.</span>&nbsp;<span class="m2" id="motto-2">Master the Ride.</span>
+        </div>
+        <div class="outro-cta-btn" id="outro-cta">
+          <span>Coba Gratis Sekarang</span>
+        </div>
+        <div class="outro-stores" id="outro-stores">
+          <div class="store-pill">
+            <svg viewBox="0 0 24 24"><path d="M3.6 2.2c-.4.4-.6 1-.6 1.8v16c0 .8.2 1.4.6 1.8l.1.1 9-9v-.2l-9-9-.1.1zm12.9 12.1l-3-3v-.2l3-3 .1.1 3.5 2c1 .6 1 1.5 0 2.1l-3.5 2-.1-.1zm-.9.9l-2.9-2.9-9.1 9.1c.3.4.9.4 1.6 0l10.4-6.2zm0-6.4L5.2 2.6c-.7-.4-1.3-.4-1.6 0l9.1 9.1 2.9-2.9z"/></svg>
+            <span>Google Play</span>
+          </div>
+          <div class="store-pill">
+            <svg viewBox="0 0 24 24"><path d="M17.05 20.28c-.98.95-2.05.8-3.08.35-1.09-.46-2.09-.48-3.24 0-1.44.62-2.2.44-3.06-.35C2.79 15.25 3.51 7.59 9.05 7.31c1.35.07 2.29.74 3.08.8 1.18-.24 2.31-.93 3.57-.84 1.51.12 2.65.72 3.4 1.8-3.12 1.87-2.38 5.98.48 7.13-.57 1.5-1.31 2.99-2.54 4.09zM12.03 7.25c-.15-2.23 1.66-4.07 3.74-4.25.29 2.58-2.34 4.5-3.74 4.25z"/></svg>
+            <span>App Store</span>
+          </div>
+        </div>
+      </div>
+
+      <div id="ui-cursor"></div>
+    </div>
+  </div>
+
+  <!-- HUD KLAIM TEKS (Di luar #world agar tidak pernah terpotong zoom kamera) -->
+  <div id="hud">
+    <!-- Claim 1a (0.2s - 4.4s) -->
+    <h1 class="claim lg pos-top" id="c1a">
+      <span class="txt">Pernah lagi asik riding</span>
+      <span class="sub-line"><span class="txt">motor tiba-tiba</span>&nbsp;<span class="nowrap"><span class="hl danger" id="hl-1a"><i></i><span class="hl-t">mogok</span></span><span class="txt2" id="q-1a">?</span></span></span>
+    </h1>
+
+    <!-- Claim 1b (4.6s - 7.9s) -->
+    <h1 class="claim md pos-center-top" id="c1b">
+      <span class="txt">Gara-gara lupa ganti oli</span>
+      <span class="sub-line"><span class="txt">atau v-belt</span>&nbsp;<span class="hl warn" id="hl-1b"><i></i><span class="hl-t">putus di jalan</span></span></span>
+    </h1>
+
+    <!-- Claim 2a (8.2s - 14.5s) -->
+    <h1 class="claim lg pos-top" id="c2a">
+      <span class="txt">Kenalin</span>&nbsp;<span class="hl" id="hl-2a"><i></i><span class="hl-t">FXON</span></span>
+      <span class="sub-line" style="font-size:52px"><span class="txt">Hitung mundur sisa KM secara presisi</span></span>
+    </h1>
+
+    <!-- Claim 2b (14.8s - 20.1s) -->
+    <h1 class="claim md pos-center-top" id="c2b">
+      <span class="txt">Oli tipis atau kampas rem aus</span>
+      <span class="sub-line"><span class="txt">ketahuan</span>&nbsp;<span class="hl warn" id="hl-2b"><i></i><span class="hl-t">sebelum mogok</span></span></span>
+    </h1>
+
+    <!-- Claim 3a (20.5s - 27.6s) — Di atas Medan Terang Titanium (.ink) -->
+    <h1 class="claim md pos-top ink" id="c3a">
+      <span class="txt">Motor harian, touring, keluarga</span>
+      <span class="sub-line"><span class="txt">masuk ke</span>&nbsp;<span class="hl ink-box" id="hl-3a"><i></i><span class="hl-t">satu garasi digital</span></span></span>
+    </h1>
+
+    <!-- Claim 3b (27.9s - 31.6s) — Di atas Medan Terang Titanium (.ink) -->
+    <h1 class="claim md pos-center-top ink" id="c3b">
+      <span class="txt">Pantau kondisi tiap motor</span>
+      <span class="sub-line"><span class="txt">tanpa ribet campur aduk</span></span>
+    </h1>
+
+    <!-- Claim 4a (32.0s - 36.3s) -->
+    <h1 class="claim md pos-top" id="c4a">
+      <span class="txt">Riwayat servis tercatat rapi</span>
+      <span class="sub-line"><span class="hl" id="hl-4a"><i></i><span class="hl-t">harga jual motor</span></span>&nbsp;<span class="txt">tetap tinggi</span></span>
+    </h1>
+
+    <!-- Claim 4b (36.5s - 40.8s) -->
+    <h1 class="claim md pos-center-top" id="c4b">
+      <span class="txt">Mau servis</span><span class="txt2" id="q-4b">?</span>&nbsp;<span class="txt">Bengkel resmi</span>
+      <span class="sub-line"><span class="txt">terdekat ketemu</span>&nbsp;<span class="hl" id="hl-4b"><i></i><span class="hl-t">satu klik</span></span></span>
+    </h1>
+
+    <!-- Claim 5a (41.1s - 44.1s) -->
+    <h1 class="claim lg pos-center-top" id="c5a">
+      <span class="txt">Kuasai motormu</span>
+      <span class="sub-line"><span class="txt">tanpa tebak-tebakan</span></span>
+    </h1>
+  </div>
+
+  <div id="emblem-wipe"><img src="assets/icon.png" alt="FXON Wipe"></div>
+
+  <div class="grain" id="grain"></div>
+  <div class="leak" id="leak"></div>
+  <div class="vignette" id="vignette"></div>
+</div>
+
+<!-- Trek Suara Utama (VO + BGM Otomotif Tersinkronisasi) -->
+<audio id="vo" src="assets/Audio/fxon-audio-master.mp3" preload="auto"></audio>
+
+<div id="ui">
+  <button id="btn-play">Pause</button>
+  <button id="btn-restart">Restart</button>
+  <input id="scrub" type="range" min="0" max="1000" value="0">
+  <span id="clock">0.00s</span>
+</div>
+
+<script type="module">
+import * as THREE from 'three';
+import { EffectComposer }  from 'three/addons/postprocessing/EffectComposer.js';
+import { RenderPass }      from 'three/addons/postprocessing/RenderPass.js';
+import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
+import { OutputPass }      from 'three/addons/postprocessing/OutputPass.js';
+
+const W = 1080, H = 1920, DURATION = 50.5;
+const $ = (s, r = document) => r.querySelector(s);
+const defs = $('#filters defs');
+let fc = 0;
+
+function makeBlur() {
+  const id = 'mb' + (fc++), NS = 'http://www.w3.org/2000/svg';
+  const f = document.createElementNS(NS, 'filter');
+  f.id = id;
+  f.setAttribute('x', '-70%'); f.setAttribute('y', '-70%');
+  f.setAttribute('width', '240%'); f.setAttribute('height', '240%');
+  const g = document.createElementNS(NS, 'feGaussianBlur');
+  g.setAttribute('stdDeviation', '0 0');
+  f.appendChild(g); defs.appendChild(f);
+  return { url: `url(#${id})`, node: g };
+}
+
+function blurTween(tl, targets, at, from, to, dur, { ease = 'power3.out', ax = 1, ay = 0.08 } = {}) {
+  const b = makeBlur(), o = { v: from };
+  tl.set(targets, { filter: b.url }, at);
+  tl.to(o, {
+    v: to, duration: dur, ease,
+    onUpdate() { b.node.setAttribute('stdDeviation', `${(o.v * ax).toFixed(2)} ${(o.v * ay).toFixed(2)}`); }
+  }, at);
+  tl.set(targets, { filter: 'none' }, at + dur);
+}
+const VERT = { ax: 0.1, ay: 1 };
+
+function splitChars(el) {
+  const txts = el.querySelectorAll('.txt');
+  const out = [];
+  txts.forEach(node => {
+    const words = (node.textContent || '').trim().split(/\s+/);
+    node.textContent = '';
+    words.forEach((w, i) => {
+      const wr = document.createElement('span');
+      wr.className = 'wd';
+      for (const c of w) {
+        const s = document.createElement('span');
+        s.className = 'ch';
+        s.textContent = c;
+        wr.appendChild(s);
+        out.push(s);
+      }
+      node.appendChild(wr);
+      if (i < words.length - 1) {
+        const sp = document.createElement('span');
+        sp.className = 'ch';
+        sp.innerHTML = '&nbsp;';
+        node.appendChild(sp);
+        out.push(sp);
+      }
+    });
+  });
+  return out;
+}
+
+/* ============ DUNIA WEBGL 3D DETERMINISTIK (Tanpa Jam Sendiri) ============ */
+const renderer = new THREE.WebGLRenderer({ canvas: $('#gl'), antialias: true });
+renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+renderer.setSize(W, H, false);
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+
+const ACC = new THREE.Color('#1449FF');
+const ACL = new THREE.Color('#688EFF');
+const BASE = new THREE.Color('#07090C');
+
+const scene = new THREE.Scene();
+scene.fog = new THREE.FogExp2(BASE.getHex(), 0.014);
+const camera = new THREE.PerspectiveCamera(50, W / H, 0.1, 400);
+
+const S = {
+  grid: 0.32, dust: 0.48, hexes: 0.65,
+  camX: 0, camY: 0, camZ: 15, camRoll: 0,
+  bloom: 0.78, shake: 0,
+  odoVal: 12200, speedVal: 68
+};
+
+/* Partikel mikro naik pelan (deterministik penuh dari fungsi trigonometri indeks) */
+{
+  const N = 700, pos = new Float32Array(N * 3), seed = new Float32Array(N);
+  for (let i = 0; i < N; i++) {
+    const h1 = Math.sin(i * 12.9898) * 43758.5453;
+    const h2 = Math.sin(i * 78.2330) * 43758.5453;
+    const h3 = Math.sin(i * 39.4250) * 43758.5453;
+    const r1 = h1 - Math.floor(h1), r2 = h2 - Math.floor(h2), r3 = h3 - Math.floor(h3);
+    pos[i * 3]     = (r1 - 0.5) * 64;
+    pos[i * 3 + 1] = (r2 - 0.5) * 90;
+    pos[i * 3 + 2] = -r3 * 55 + 6;
+    seed[i] = r1 * 6.28318;
+  }
+  const g = new THREE.BufferGeometry();
+  g.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+  g.setAttribute('aSeed', new THREE.BufferAttribute(seed, 1));
+  var dustMat = new THREE.ShaderMaterial({
+    transparent: true, depthWrite: false, blending: THREE.AdditiveBlending,
+    uniforms: {
+      uTime: { value: 0 }, uOpacity: { value: 0.45 },
+      uPix: { value: Math.min(devicePixelRatio, 2) },
+      uColor: { value: new THREE.Color('#2B56D8') }
+    },
+    vertexShader: `
+      attribute float aSeed; varying float vA; uniform float uTime; uniform float uPix;
+      void main(){
+        vec3 p = position;
+        p.y = mod(p.y + uTime * 1.1 + 45.0, 90.0) - 45.0;
+        p.x += sin(uTime * 0.45 + aSeed) * 0.5;
+        vec4 mv = modelViewMatrix * vec4(p, 1.0);
+        vA = 0.25 + 0.55 * abs(sin(uTime * 0.8 + aSeed * 2.7));
+        gl_PointSize = (22.0 * uPix) / (-mv.z);
+        gl_Position = projectionMatrix * mv;
+      }`,
+    fragmentShader: `
+      varying float vA; uniform float uOpacity; uniform vec3 uColor;
+      void main(){
+        float d = length(gl_PointCoord - 0.5); if(d > 0.5) discard;
+        gl_FragColor = vec4(uColor, pow(1.0 - d * 2.0, 2.2) * vA * uOpacity);
+      }`
+  });
+  scene.add(new THREE.Points(g, dustMat));
+}
+
+/* Grid perspektif lantai yang bernapas (§7c #8) */
+const gridMat = new THREE.ShaderMaterial({
+  transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, side: THREE.DoubleSide,
+  uniforms: { uTime: { value: 0 }, uOpacity: { value: 0.3 }, uC1: { value: ACC }, uC2: { value: ACL } },
+  vertexShader: `varying vec2 vUv; void main(){ vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }`,
+  fragmentShader: `
+    varying vec2 vUv; uniform float uTime; uniform float uOpacity; uniform vec3 uC1; uniform vec3 uC2;
+    void main(){
+      vec2 p = (vUv - 0.5) * (38.0 + sin(uTime * 0.65) * 1.5);
+      vec2 g = abs(fract(p) - 0.5) / fwidth(p);
+      float line = 1.0 - min(min(g.x, g.y), 1.0);
+      float d = length(vUv - 0.5) * 2.0;
+      float fade = 1.0 - smoothstep(0.05, 0.58, d);
+      gl_FragColor = vec4(mix(uC1, uC2, fade), line * fade * uOpacity);
+    }`
+});
+const grid = new THREE.Mesh(new THREE.PlaneGeometry(160, 160), gridMat);
+grid.rotation.x = -Math.PI / 2;
+grid.position.y = -8.2;
+scene.add(grid);
+
+/* Ornamen 3D Mekanis (Bentuk Mur Hexagonal Otomotif Berbevel) */
+scene.add(new THREE.AmbientLight(0x243B80, 1.2));
+const keyLight = new THREE.DirectionalLight(0x88ACFF, 2.5);
+keyLight.position.set(5, 8, 10);
+scene.add(keyLight);
+
+function hexRingShape() {
+  const s = new THREE.Shape(), R = 1.05;
+  for (let i = 0; i < 6; i++) {
+    const a = (i / 6) * Math.PI * 2;
+    const x = Math.cos(a) * R, y = Math.sin(a) * R;
+    if (i === 0) s.moveTo(x, y); else s.lineTo(x, y);
+  }
+  s.closePath();
+  const hole = new THREE.Path(), r = 0.56;
+  for (let i = 0; i < 6; i++) {
+    const a = (i / 6) * Math.PI * 2;
+    const x = Math.cos(a) * r, y = Math.sin(a) * r;
+    if (i === 0) hole.moveTo(x, y); else hole.lineTo(x, y);
+  }
+  hole.closePath();
+  s.holes.push(hole);
+  return s;
+}
+const hexGeo = new THREE.ExtrudeGeometry(hexRingShape(), {
+  depth: 0.28, bevelEnabled: true, bevelThickness: 0.06, bevelSize: 0.05, bevelSegments: 3
+});
+hexGeo.center();
+
+const mkHexMat = () => new THREE.MeshStandardMaterial({
+  color: 0x3968FF, emissive: 0x0E2980, emissiveIntensity: 0.55,
+  roughness: 0.25, metalness: 0.55, transparent: true, opacity: 0
+});
+const HEX_DATA = [
+  [-5.6,  6.5, -8, 0.65,  0.42, 0.8],
+  [ 5.8,  5.2, -9, 0.78, -0.35, 2.1],
+  [-5.2, -5.8, -6, 0.50,  0.55, 3.7],
+  [ 5.4, -6.4, -8, 0.62, -0.48, 1.4],
+  [-3.8,  1.2,-11, 0.44,  0.38, 4.9]
+];
+const ambHexes = HEX_DATA.map(d => {
+  const m = new THREE.Mesh(hexGeo, mkHexMat());
+  m.position.set(d[0], d[1], d[2]);
+  m.scale.setScalar(d[3]);
+  m.userData = d;
+  scene.add(m);
+  return m;
+});
+
+const composer = new EffectComposer(renderer);
+composer.setSize(W, H);
+composer.addPass(new RenderPass(scene, camera));
+const bloom = new UnrealBloomPass(new THREE.Vector2(W, H), 0.72, 0.65, 0.58);
+composer.addPass(bloom);
+composer.addPass(new OutputPass());
+
+/* Rig Kamera Dunia (§3b: ukuran shot wide <-> medium close-up <-> close-up) */
+const CAM = { s: 1, fx: W / 2, fy: H / 2, rx: 0, ry: 0 };
+const worldEl = $('#world');
+const dialWheel = $('#dial-wheel');
+const bgDialRing = $('#bg-dial-ring');
+const grainEl = $('#grain');
+const uiOdoEl = $('#ui-odo-val');
+const dialSpeedEl = $('#dial-speed');
+
+function applyWorldCam(t) {
+  const breath = 1 + 0.012 * Math.sin(t * 0.75);
+  const s = CAM.s * breath;
+  let tx = W / 2 - CAM.fx * s;
+  let ty = H / 2 - CAM.fy * s;
+  worldEl.style.transform = `translate(${tx.toFixed(2)}px,${ty.toFixed(2)}px) scale(${s.toFixed(4)})`;
+}
+
+function render(t) {
+  dustMat.uniforms.uTime.value = t;
+  dustMat.uniforms.uOpacity.value = S.dust;
+  gridMat.uniforms.uTime.value = t;
+  gridMat.uniforms.uOpacity.value = S.grid;
+
+  for (const m of ambHexes) {
+    const d = m.userData;
+    const tw = 0.45 + 0.55 * Math.abs(Math.sin(t * 0.75 + d[5]));
+    m.material.opacity = S.hexes * tw;
+    m.visible = m.material.opacity > 0.01;
+    m.rotation.z = t * d[4] + d[5];
+    m.rotation.y = Math.sin(t * d[4] * 1.3 + d[5]) * 0.5;
+    m.position.y = d[1] + Math.sin(t * 0.55 + d[5]) * 0.45;
+  }
+
+  const sh = S.shake;
+  camera.position.set(
+    S.camX + Math.sin(t * 0.42) * 0.18 + Math.sin(t * 131.7) * sh,
+    S.camY + Math.cos(t * 0.34) * 0.15 + Math.cos(t * 109.3) * sh,
+    S.camZ
+  );
+  camera.lookAt(S.camX * 0.3, S.camY * 0.3, 0);
+  camera.rotation.z += S.camRoll;
+  bloom.strength = S.bloom;
+  composer.render();
+
+  /* Gerak deterministik DOM berbasis t */
+  bgDialRing.style.transform = `rotate(${(t * 7.5).toFixed(2)}deg) scale(${(1 + 0.03 * Math.sin(t * 0.5)).toFixed(3)})`;
+  dialWheel.style.transform = `rotate(${(Math.sin(t * 1.4) * 8).toFixed(2)}deg)`;
+
+  /* Butiran hidup deterministik 12 fps (§7d) */
+  const k = Math.floor(t * 12);
+  grainEl.style.transform = `translate(${(k * 37) % 60 - 30}px,${(k * 61) % 60 - 30}px)`;
+
+  /* Angka odometer & kecepatan deterministik */
+  dialSpeedEl.textContent = String(Math.round(S.speedVal));
+  uiOdoEl.textContent = Math.round(S.odoVal).toLocaleString('en-US');
+
+  applyWorldCam(t);
+}
+
+/* ============ TIMELINE UTAMA — SINKRON PERSIS DENGAN SCENE 1-5 VO ============ */
+const Q = new URLSearchParams(location.search);
+const tl = gsap.timeline({ paused: true });
+const leak = $('#leak');
+
+/* Helper Shot Kamera Dunia (§3b) */
+const shot = (at, dur, s, fx, fy, ease = 'power2.inOut') =>
+  tl.to(CAM, { s, fx, fy, duration: dur, ease }, at);
+
+/* Helper 8 Pintu Teks + Motion Blur Berarah (§1 & §2) */
+const inUp = (ch, el, at, { dur = 0.72, st = 0.018 } = {}) => {
+  tl.set(el, { autoAlpha: 1 }, at);
+  tl.fromTo(ch, { opacity: 0, yPercent: 62, scaleY: 1.4 }, { opacity: 1, yPercent: 0, scaleY: 1, duration: dur, ease: 'power4.out', stagger: st, immediateRender: false }, at);
+  blurTween(tl, el, at, 28, 0, dur, VERT);
+};
+const inLeft = (ch, el, at, { dur = 0.68, st = 0.016 } = {}) => {
+  tl.set(el, { autoAlpha: 1 }, at);
+  tl.fromTo(ch, { opacity: 0, xPercent: -48 }, { opacity: 1, xPercent: 0, duration: dur, ease: 'power4.out', stagger: st, immediateRender: false }, at);
+  blurTween(tl, el, at, 42, 0, dur, { ease: 'power4.out' });
+};
+const inRight = (ch, el, at, { dur = 0.68, st = 0.016 } = {}) => {
+  tl.set(el, { autoAlpha: 1 }, at);
+  tl.fromTo(ch, { opacity: 0, xPercent: 48 }, { opacity: 1, xPercent: 0, duration: dur, ease: 'power4.out', stagger: { each: st, from: 'end' }, immediateRender: false }, at);
+  blurTween(tl, el, at, 42, 0, dur, { ease: 'power4.out' });
+};
+const inDepth = (ch, el, at, { dur = 0.82, st = 0.015 } = {}) => {
+  tl.set(el, { autoAlpha: 1 }, at);
+  tl.fromTo(ch, { opacity: 0, scale: 2.2 }, { opacity: 1, scale: 1, duration: dur, ease: 'expo.out', stagger: { each: st, from: 'center' }, immediateRender: false }, at);
+  blurTween(tl, el, at, 22, 0, dur, { ease: 'expo.out', ax: 1, ay: 1 });
+};
+const inWords = (ch, el, at, { dur = 0.58, st = 0.09 } = {}) => {
+  const w = el.querySelectorAll('.wd');
+  tl.set(el, { autoAlpha: 1 }, at);
+  tl.set(ch, { opacity: 1, xPercent: 0, yPercent: 0, scale: 1, scaleY: 1 }, at);
+  tl.fromTo(w, { opacity: 0, yPercent: 42, rotateX: -50 }, { opacity: 1, yPercent: 0, rotateX: 0, duration: dur, ease: 'back.out(1.6)', stagger: st, immediateRender: false }, at);
+};
+const outUp = (ch, el, at, { dur = 0.38, st = 0.008 } = {}) => {
+  tl.to(ch, { opacity: 0, yPercent: -68, duration: dur, ease: 'power2.in', stagger: st }, at);
+  blurTween(tl, el, at, 0, 38, dur + 0.08, { ease: 'power2.in', ...VERT });
+  tl.set(el, { autoAlpha: 0 }, at + dur + 0.1);
+};
+const outLeft = (ch, el, at, { dur = 0.38, st = 0.008 } = {}) => {
+  tl.to(ch, { opacity: 0, xPercent: -58, duration: dur, ease: 'power2.in', stagger: st }, at);
+  blurTween(tl, el, at, 0, 44, dur + 0.08, { ease: 'power2.in' });
+  tl.set(el, { autoAlpha: 0 }, at + dur + 0.1);
+};
+const outDepth = (ch, el, at, { dur = 0.42, st = 0.007 } = {}) => {
+  tl.to(ch, { opacity: 0, scale: 2.1, duration: dur, ease: 'power2.in', stagger: { each: st, from: 'center' } }, at);
+  blurTween(tl, el, at, 0, 26, dur + 0.08, { ease: 'power2.in', ax: 1, ay: 1 });
+  tl.set(el, { autoAlpha: 0 }, at + dur + 0.1);
+};
+const mark = (hl, at) => {
+  const i = $('i', hl);
+  if (i) tl.fromTo(i, { scaleX: 0 }, { scaleX: 1, duration: 0.48, ease: 'power3.out', immediateRender: false }, at);
+  tl.fromTo($('.hl-t', hl), { opacity: 0, yPercent: 55 }, { opacity: 1, yPercent: 0, duration: 0.62, ease: 'power4.out', immediateRender: false }, at);
+};
+const popDot = (el, at) =>
+  tl.fromTo(el, { opacity: 0, yPercent: 55 }, { opacity: 1, yPercent: 0, duration: 0.45, ease: 'power4.out', immediateRender: false }, at);
+
+/* Split semua klaim */
+const C1A = $('#c1a'), ch1a = splitChars(C1A);
+const C1B = $('#c1b'), ch1b = splitChars(C1B);
+const C2A = $('#c2a'), ch2a = splitChars(C2A);
+const C2B = $('#c2b'), ch2b = splitChars(C2B);
+const C3A = $('#c3a'), ch3a = splitChars(C3A);
+const C3B = $('#c3b'), ch3b = splitChars(C3B);
+const C4A = $('#c4a'), ch4a = splitChars(C4A);
+const C4B = $('#c4b'), ch4b = splitChars(C4B);
+const C5A = $('#c5a'), ch5a = splitChars(C5A);
+
+/* Keadaan Awal Dunia (t = 0) — In-media-res speedometer sedang melaju */
+tl.set('#paper', { autoAlpha: 0 }, 0);
+tl.set(['#gl', '.vignette', '#bgfx', '#pocket'], { opacity: 1 }, 0);
+tl.set(['#bg-hazard', '#bg-emerald'], { opacity: 0 }, 0);
+tl.set(S, { grid: 0.32, dust: 0.48, hexes: 0.65, camZ: 14.5, bloom: 0.78, shake: 0, speedVal: 68, odoVal: 12200 }, 0);
+tl.set(CAM, { s: 1.18, fx: 540, fy: 1020 }, 0);
+tl.set('#cluster-rig', { autoAlpha: 1, scale: 1, y: 0, rotateX: 8 }, 0);
+tl.set(['#phone-stage', '#garage-stage', '#service-stage', '#outro-stage'], { autoAlpha: 0 }, 0);
+
+/* ============================================================================
+   BABAK 1 (0.00s - 8.15s): MASALAH MOGOK DI JALAN (Scene1.mp3: 0.20s - 7.91s)
+   VO: "Pernah gak sih... lagi asik riding, eh motor tiba-tiba mogok gara-gara
+        lupa ganti oli atau v-belt putus?"
+   ============================================================================ */
+inUp(ch1a, C1A, 0.20);
+shot(0.20, 2.2, 1.02, 540, 960, 'sine.inOut');
+tl.to(S, { speedVal: 74, duration: 2.2, ease: 'sine.inOut' }, 0.20);
+
+/* 2.82s: "eh motor tiba-tiba mogok?" -> Kecepatan anjlok ke 0, kamera bergetar, glow merah menyala */
+mark($('#hl-1a'), 2.82);
+popDot($('#q-1a'), 3.25);
+tl.to(S, { speedVal: 0, duration: 0.85, ease: 'power3.out' }, 2.82);
+tl.fromTo(S, { shake: 0.18 }, { shake: 0, duration: 0.65, ease: 'power2.out' }, 2.82);
+tl.to('#bg-hazard', { opacity: 1, duration: 0.45 }, 2.82);
+tl.set('#dial-tag', { textContent: 'ENGINE STALL · CHECK PARTS', color: '#E23B34' }, 2.95);
+tl.to('.dial-plate', { borderColor: '#E23B34', boxShadow: '0 36px 90px rgba(226,59,52,.45), inset 0 0 70px rgba(226,59,52,.32)', duration: 0.4 }, 2.82);
+
+outLeft(ch1a, C1A, 4.30);
+
+/* 4.65s: "gara-gara lupa ganti oli atau v-belt putus" -> Kamera geser ke kartu peringatan */
+inLeft(ch1b, C1B, 4.65);
+mark($('#hl-1b'), 5.85);
+tl.to('#cluster-rig', { y: -210, scale: 0.88, duration: 0.75, ease: 'power3.inOut' }, 4.65);
+tl.fromTo('#hz-oil', { opacity: 0, x: -160, rotateZ: -4 }, { opacity: 1, x: 0, rotateZ: 0, duration: 0.6, ease: 'back.out(1.6)', immediateRender: false }, 4.80);
+blurTween(tl, '#hz-oil', 4.80, 36, 0, 0.55);
+tl.fromTo('#hz-belt', { opacity: 0, x: 160, rotateZ: 4 }, { opacity: 1, x: 0, rotateZ: 0, duration: 0.6, ease: 'back.out(1.6)', immediateRender: false }, 5.65);
+blurTween(tl, '#hz-belt', 5.65, 36, 0, 0.55);
+
+/* ============================================================================
+   TRANSISI 1 -> 2 (7.80s - 8.55s): EMBLEM FXON 3D WIPE MELEWATI LENSA (§4c #3)
+   ============================================================================ */
+outUp(ch1b, C1B, 7.65);
+tl.fromTo('#emblem-wipe',
+  { opacity: 0, scale: 0.25, rotateZ: -28, x: -320, y: 240 },
+  { opacity: 1, scale: 4.8, rotateZ: 12, x: 0, y: 0, duration: 0.52, ease: 'power3.in', immediateRender: false },
+  7.72
+);
+blurTween(tl, '#emblem-wipe', 7.72, 10, 48, 0.52, { ax: 1, ay: 1 });
+
+/* Di titik puncak wipe (8.24s), ganti panggung ke 3D Smartphone FXON */
+tl.set('#cluster-rig', { autoAlpha: 0 }, 8.22);
+tl.to('#bg-hazard', { opacity: 0, duration: 0.3 }, 8.22);
+tl.set('#phone-stage', { autoAlpha: 1 }, 8.22);
+tl.fromTo('#emblem-wipe',
+  { opacity: 1, scale: 4.8 },
+  { opacity: 0, scale: 7.5, duration: 0.36, ease: 'power2.out', immediateRender: false },
+  8.24
+);
+
+/* ============================================================================
+   BABAK 2 (8.15s - 20.45s): TELEMETRY WEAR TRACKING (Scene2.mp3: 8.15s - 20.19s)
+   VO: "Kenalin FXON! Aplikasi yang ngitung mundur sisa kilometer sparepart motor
+        kamu secara presisi. Oli tinggal dikit? Kampas rem tipis? FXON ngasih tau
+        sebelum motor kamu mogok!"
+   ============================================================================ */
+inDepth(ch2a, C2A, 8.28);
+mark($('#hl-2a'), 8.65);
+
+/* Ponsel naik dengan perspektif 3D miring lalu menegak */
+tl.fromTo('#phone-chassis',
+  { y: 260, rotateY: -22, rotateX: 14, scale: 0.88 },
+  { y: 0, rotateY: 0, rotateX: 0, scale: 1, duration: 1.05, ease: 'power3.out', immediateRender: false },
+  8.24
+);
+shot(8.24, 1.1, 1.0, 540, 960, 'power3.out');
+
+/* 9.89s - 14.39s: Odometer bergulir presisi 12,200 -> 14,500 KM */
+tl.to(S, {
+  odoVal: 14500, duration: 4.3, ease: 'power2.inOut',
+  onUpdate() {
+    const cur = Math.round(S.odoVal);
+    const oilLeft = Math.max(45, 2345 - (cur - 12200));
+    const brakeLeft = 1820 - Math.round((cur - 12200) * 0.843);
+    $('#sp-oil-km').textContent = oilLeft.toLocaleString('en-US');
+    $('#sp-brake-km').textContent = brakeLeft.toLocaleString('en-US');
+    $('#sp-oil-bar').style.width = Math.max(8, (oilLeft / 2500) * 100).toFixed(1) + '%';
+    $('#sp-brake-bar').style.width = Math.max(4, (Math.max(0, brakeLeft) / 2500) * 100).toFixed(1) + '%';
+  }
+}, 9.95);
+
+outUp(ch2a, C2A, 14.40);
+inRight(ch2b, C2B, 14.78);
+
+/* 14.92s: "Oli tinggal dikit?" -> Kamera fokus ke kartu Oli Mesin (Amber Warning) tanpa terpotong bezel */
+shot(14.75, 0.70, 1.05, 540, 955, 'power2.inOut');
+tl.to(['.ui-hero-block', '#sp-belt'], { opacity: 0.38, duration: 0.35 }, 14.85);
+tl.to('#sp-oil', {
+  scale: 1.04, borderColor: '#E0A526', backgroundColor: '#241C0A',
+  boxShadow: '0 20px 50px rgba(224,165,38,.35)', duration: 0.35
+}, 14.90);
+tl.set('#sp-oil-km', { textContent: '45', color: '#E0A526' }, 14.90);
+tl.set('#sp-oil-lbl', { textContent: 'WARNING ≤100KM', color: '#E0A526' }, 14.90);
+tl.to('#sp-oil-bar', { backgroundColor: '#E0A526', width: '9%', duration: 0.35 }, 14.90);
+tl.to('#bg-hazard', { opacity: 0.45, duration: 0.35 }, 14.90);
+
+/* 16.07s: "Kampas rem tipis?" -> Fokus berpindah ke kartu Kampas Rem (Danger Red Overdue) */
+shot(15.95, 0.68, 1.06, 540, 970, 'power2.inOut');
+tl.to('#sp-oil', { scale: 0.98, boxShadow: 'none', duration: 0.35 }, 16.00);
+tl.to('#sp-brake', {
+  scale: 1.04, borderColor: '#E23B34', backgroundColor: '#281212',
+  boxShadow: '0 22px 56px rgba(226,59,52,.42)', duration: 0.35
+}, 16.05);
+tl.set('#sp-brake-name', { color: '#FF7A74' }, 16.05);
+tl.set('#sp-brake-km', { textContent: '-120', color: '#E23B34' }, 16.05);
+tl.set('#sp-brake-lbl', { textContent: 'OVERDUE', color: '#E23B34' }, 16.05);
+tl.to('#sp-brake-bar', { backgroundColor: '#E23B34', width: '100%', duration: 0.35 }, 16.05);
+
+/* 17.41s: "FXON ngasih tau sebelum motor kamu mogok!" -> Mundur ke wide + Banner Proaktif turun */
+mark($('#hl-2b'), 17.45);
+shot(17.35, 0.78, 1.0, 540, 960, 'power2.inOut');
+tl.to(['.ui-hero-block', '#sp-belt'], { opacity: 1, duration: 0.4 }, 17.35);
+tl.to(['#sp-oil', '#sp-brake'], { scale: 1, boxShadow: 'none', duration: 0.4 }, 17.35);
+tl.to('#bg-hazard', { opacity: 0, duration: 0.4 }, 17.40);
+tl.fromTo('#ui-proactive-banner',
+  { opacity: 0, y: -60, scale: 0.92 },
+  { opacity: 1, y: 0, scale: 1, duration: 0.55, ease: 'back.out(1.7)', immediateRender: false },
+  17.55
+);
+
+/* ============================================================================
+   TRANSISI 2 -> 3 (20.10s - 20.65s): KARTU MOTOR TERANGKAT MEMBUKA MEDAN TERANG
+   ============================================================================ */
+outDepth(ch2b, C2B, 20.00);
+tl.to('#phone-chassis', { rotateY: 75, scale: 0.82, opacity: 0, duration: 0.48, ease: 'power2.in' }, 20.05);
+tl.set('#phone-stage', { autoAlpha: 0 }, 20.53);
+
+/* Aktifkan Medan Terang Titanium (§7b) */
+tl.set('#paper', { autoAlpha: 1 }, 20.42);
+tl.to('#gl', { opacity: 0.08, duration: 0.35 }, 20.42);
+tl.to('#bgfx', { opacity: 0, duration: 0.3 }, 20.42);
+tl.to('#pocket', { opacity: 0, duration: 0.3 }, 20.42);
+tl.to('#vignette', { opacity: 0.25, duration: 0.4 }, 20.42);
+tl.to('.paper .b', { x: 75, y: -55, duration: 4.5, ease: 'sine.inOut', yoyo: true, repeat: 2, stagger: 0.4 }, 20.42);
+
+/* ============================================================================
+   BABAK 3 (20.45s - 31.95s): MULTI-VEHICLE GARAGE (Scene3.mp3: 20.45s - 31.68s)
+   VO: "Punya motor harian, motor touring, atau motor keluarga? Masukkin semuanya
+        ke satu garasi digital FXON. Pantau kondisi tiap motor tanpa ribet campur aduk."
+   ============================================================================ */
+tl.set('#garage-stage', { autoAlpha: 1 }, 20.45);
+inWords(ch3a, C3A, 20.52);
+
+/* 20.45s: "Punya motor harian" -> Kartu 1 (Honda Vario 160) masuk dengan rotasi 3D */
+tl.fromTo('#gc-1',
+  { opacity: 0, y: 180, rotateX: -28, scale: 0.86 },
+  { opacity: 1, y: 0, rotateX: 0, scale: 1, duration: 0.68, ease: 'back.out(1.5)', immediateRender: false },
+  20.50
+);
+shot(20.50, 0.85, 1.04, 540, 940, 'power2.out');
+
+/* 22.05s: "motor touring" -> Kartu 2 (Yamaha NMAX Turbo) masuk */
+tl.fromTo('#gc-2',
+  { opacity: 0, y: 200, rotateX: -28, scale: 0.86 },
+  { opacity: 1, y: 0, rotateX: 0, scale: 1, duration: 0.68, ease: 'back.out(1.5)', immediateRender: false },
+  21.95
+);
+shot(21.95, 0.85, 1.04, 540, 980, 'power2.inOut');
+
+/* 23.13s: "atau motor keluarga?" -> Kartu 3 (Vespa Sprint 150) masuk */
+tl.fromTo('#gc-3',
+  { opacity: 0, y: 200, rotateX: -28, scale: 0.86 },
+  { opacity: 1, y: 0, rotateX: 0, scale: 1, duration: 0.68, ease: 'back.out(1.5)', immediateRender: false },
+  23.10
+);
+shot(23.10, 0.85, 1.04, 540, 1020, 'power2.inOut');
+
+/* 24.98s: "Masukkin semuanya ke satu garasi digital FXON" -> Kamera mundur ke wide menampakkan ke-3 kartu */
+mark($('#hl-3a'), 25.00);
+shot(24.90, 1.0, 1.0, 540, 960, 'power3.inOut');
+
+outUp(ch3a, C3A, 27.70);
+inUp(ch3b, C3B, 28.15);
+
+/* 28.34s - 31.45s: "Pantau kondisi tiap motor tanpa ribet campur aduk" -> Highlight bergantian antar kartu */
+tl.to('#gc-1', { scale: 0.97, borderColor: '#D5E0F2', duration: 0.35 }, 28.40);
+tl.to('#gc-2', { scale: 1.03, borderColor: '#1449FF', boxShadow: '0 32px 80px rgba(20,73,255,.26)', duration: 0.4 }, 28.40);
+tl.to('#gc-2', { scale: 0.97, borderColor: '#D5E0F2', duration: 0.35 }, 29.80);
+tl.to('#gc-3', { scale: 1.03, borderColor: '#1449FF', boxShadow: '0 32px 80px rgba(20,73,255,.26)', duration: 0.4 }, 29.80);
+
+/* ============================================================================
+   TRANSISI 3 -> 4 (31.55s - 32.05s): KEMBALI KE COCKPIT GELAP + PANEL MEKAR
+   ============================================================================ */
+outLeft(ch3b, C3B, 31.50);
+tl.to('#garage-stage', { y: -180, opacity: 0, scale: 0.9, duration: 0.45, ease: 'power2.in' }, 31.55);
+tl.set('#garage-stage', { autoAlpha: 0 }, 32.02);
+
+/* Kembalikan latar gelap + nyalakan aksen emerald/biru */
+tl.to('#paper', { autoAlpha: 0, duration: 0.35 }, 31.65);
+tl.to('#gl', { opacity: 1, duration: 0.4 }, 31.65);
+tl.to(['#bgfx', '#pocket', '#vignette'], { opacity: 1, duration: 0.4 }, 31.65);
+tl.to('#bg-emerald', { opacity: 1, duration: 0.5 }, 31.75);
+
+/* ============================================================================
+   BABAK 4 (31.95s - 41.05s): SERVICE LOGBOOK & WORKSHOP RADAR (Scene4.mp3)
+   VO: "Riwayat servis tercatat rapi bikin harga jual motor tetap tinggi.
+        Mau servis? Bengkel resmi terdekat langsung ketemu dalam satu klik."
+   ============================================================================ */
+tl.set('#service-stage', { autoAlpha: 1 }, 31.95);
+inLeft(ch4a, C4A, 32.00);
+mark($('#hl-4a'), 33.80);
+
+tl.fromTo('#logbook-panel',
+  { opacity: 0, y: 120, rotateX: 18, scale: 0.92 },
+  { opacity: 1, y: 0, rotateX: 0, scale: 1, duration: 0.65, ease: 'power3.out', immediateRender: false },
+  31.98
+);
+shot(31.98, 0.85, 1.08, 540, 860, 'power2.out');
+
+/* Baris riwayat servis masuk berurutan */
+tl.fromTo('#lb-1', { opacity: 0, x: -50 }, { opacity: 1, x: 0, duration: 0.48, ease: 'power3.out', immediateRender: false }, 32.45);
+tl.fromTo('#lb-2', { opacity: 0, x: -50 }, { opacity: 1, x: 0, duration: 0.48, ease: 'power3.out', immediateRender: false }, 33.05);
+tl.fromTo('#lb-3', { opacity: 0, x: -50 }, { opacity: 1, x: 0, duration: 0.48, ease: 'power3.out', immediateRender: false }, 33.65);
+
+/* 36.47s: "Mau servis?" -> Logbook mundur halus, Panel Radar Bengkel naik ke fokus utama */
+outUp(ch4a, C4A, 36.15);
+inUp(ch4b, C4B, 36.48);
+popDot($('#q-4b'), 37.05);
+mark($('#hl-4b'), 38.20);
+
+tl.to('#logbook-panel', { y: -80, scale: 0.90, opacity: 0.14, duration: 0.55, ease: 'power2.inOut' }, 36.45);
+tl.fromTo('#radar-panel',
+  { opacity: 0, y: 140, scale: 0.92 },
+  { opacity: 1, y: 0, scale: 1, duration: 0.65, ease: 'back.out(1.4)', immediateRender: false },
+  36.50
+);
+shot(36.50, 0.9, 1.04, 540, 1010, 'power2.inOut');
+
+/* Pin bengkel meletup + garis rute hijau menggambar dirinya sendiri */
+tl.fromTo('#wp-1', { opacity: 0, scale: 0.4, y: 30 }, { opacity: 1, scale: 1, y: 0, duration: 0.5, ease: 'back.out(2)', immediateRender: false }, 37.35);
+tl.fromTo('#wp-2', { opacity: 0, scale: 0.4, y: 30 }, { opacity: 1, scale: 1, y: 0, duration: 0.5, ease: 'back.out(2)', immediateRender: false }, 37.75);
+tl.fromTo('#wp-3', { opacity: 0, scale: 0.4, y: 30 }, { opacity: 1, scale: 1, y: 0, duration: 0.5, ease: 'back.out(2)', immediateRender: false }, 38.10);
+tl.to('#radar-route', { strokeDashoffset: 0, duration: 1.1, ease: 'power2.inOut' }, 37.80);
+
+/* Kursor mengklik tombol "1-Klik Rute" di detik 39.2s */
+tl.fromTo('#ui-cursor',
+  { opacity: 0, x: 240, y: 520, scale: 1.3 },
+  { opacity: 1, x: 220, y: 690, scale: 1, duration: 0.55, ease: 'power2.inOut', immediateRender: false },
+  38.75
+);
+tl.to('#ui-cursor', { scale: 0.78, duration: 0.14, yoyo: true, repeat: 1 }, 39.35);
+tl.to('#radar-btn', { scale: 0.93, backgroundColor: '#3FA66B', duration: 0.16, yoyo: true, repeat: 1 }, 39.35);
+tl.to('#ui-cursor', { opacity: 0, duration: 0.3 }, 39.90);
+
+/* ============================================================================
+   BABAK 5 (41.05s - 50.50s): OUTRO BRAND LOCKUP & CTA (Scene5.mp3)
+   VO: "Saatnya kuasai motormu tanpa tebak-tebakan. Download FXON:
+        Track the wear, master the ride. Coba gratis sekarang!"
+   ============================================================================ */
+outDepth(ch4b, C4B, 40.70);
+tl.to('#service-stage', { scale: 0.78, opacity: 0, duration: 0.55, ease: 'power2.in' }, 40.75);
+tl.set('#service-stage', { autoAlpha: 0 }, 41.32);
+tl.to('#bg-emerald', { opacity: 0, duration: 0.5 }, 40.90);
+
+/* Sapuan Light Leak lembut di depan lensa saat memasuki Babak Penutup */
+tl.fromTo(leak, { x: -900, y: -200, scale: 0.85, opacity: 0 }, { x: 280, y: 120, scale: 1.15, opacity: 0.75, duration: 0.55, ease: 'sine.in', immediateRender: false }, 40.85);
+tl.to(leak, { opacity: 0, duration: 0.65, ease: 'sine.out' }, 41.40);
+
+shot(40.95, 1.1, 1.0, 540, 960, 'power3.out');
+tl.set('#outro-stage', { autoAlpha: 1 }, 41.05);
+
+/* 41.05s: "Saatnya kuasai motormu tanpa tebak-tebakan." */
+inDepth(ch5a, C5A, 41.10);
+tl.fromTo('#outro-logo',
+  { opacity: 0, scale: 0.4, rotateY: -45, y: 120 },
+  { opacity: 1, scale: 1, rotateY: 0, y: 0, duration: 0.95, ease: 'back.out(1.7)', immediateRender: false },
+  41.20
+);
+tl.fromTo('#outro-wordmark',
+  { opacity: 0, y: 60, letterSpacing: '0.32em' },
+  { opacity: 1, y: 0, letterSpacing: '0.12em', duration: 0.85, ease: 'power4.out', immediateRender: false },
+  43.95
+);
+
+outUp(ch5a, C5A, 44.10);
+
+/* 45.71s: "Track the wear," -> 46.73s: "master the ride." */
+tl.fromTo('#motto-1', { opacity: 0, y: 36 }, { opacity: 1, y: 0, duration: 0.6, ease: 'power3.out', immediateRender: false }, 45.65);
+tl.fromTo('#motto-2', { opacity: 0, y: 36 }, { opacity: 1, y: 0, duration: 0.6, ease: 'power3.out', immediateRender: false }, 46.68);
+
+/* 48.17s: "Coba gratis sekarang!" -> Tombol CTA muncul & ditekan */
+tl.fromTo('#outro-cta',
+  { opacity: 0, scale: 0.78, y: 45 },
+  { opacity: 1, scale: 1, y: 0, duration: 0.62, ease: 'back.out(1.9)', immediateRender: false },
+  47.95
+);
+tl.fromTo('#outro-stores',
+  { opacity: 0, y: 30 },
+  { opacity: 1, y: 0, duration: 0.55, ease: 'power3.out', immediateRender: false },
+  48.25
+);
+tl.to('#outro-cta', { scale: 0.94, boxShadow: '0 32px 100px rgba(104,142,255,.95)', duration: 0.18, yoyo: true, repeat: 1 }, 48.85);
+
+/* Push pelan selama penutup agar frame tidak pernah beku (§3b) */
+shot(44.20, 6.2, 1.06, 540, 960, 'sine.inOut');
+tl.to({}, { duration: 0.01 }, DURATION);
+
+/* ============ PEREKAT, SINKRON SUARA VO & PANEL SCRUB ============ */
+/* Buat tekstur butiran deterministik 1 kali di memori agar GPU render 60fps sangat cepat */
+{
+  const gc = document.createElement('canvas');
+  gc.width = 160; gc.height = 160;
+  const gctx = gc.getContext('2d');
+  const img = gctx.createImageData(160, 160);
+  const d = img.data;
+  for (let i = 0; i < 160 * 160; i++) {
+    const h = Math.sin(i * 12.9898 + 4.1414) * 43758.5453;
+    const v = Math.floor((h - Math.floor(h)) * 255);
+    d[i * 4] = v; d[i * 4 + 1] = v; d[i * 4 + 2] = v; d[i * 4 + 3] = 255;
+  }
+  gctx.putImageData(img, 0, 0);
+  grainEl.style.backgroundImage = `url(${gc.toDataURL()})`;
+}
+
+const stage = $('#stage');
+const fit = () => {
+  const s = Math.min(innerWidth / W, innerHeight / H);
+  stage.style.transform = `translate(-50%,-50%) scale(${s})`;
+};
+addEventListener('resize', fit);
+fit();
+
+const vo = $('#vo');
+let audioOn = false;
+const clock = $('#clock'), scrub = $('#scrub'), btn = $('#btn-play');
+let scrubbing = false;
+
+function startPlayback() {
+  tl.play(0);
+  vo.currentTime = 0;
+  vo.play().then(() => { audioOn = true; }).catch(() => {});
+  btn.textContent = 'Pause';
+}
+
+tl.eventCallback('onComplete', () => { startPlayback(); });
+
+if (!Q.has('clean')) {
+  (function frame() {
+    const t = tl.time();
+    render(t);
+    clock.textContent = t.toFixed(2) + 's';
+    if (!scrubbing) scrub.value = String((t / DURATION) * 1000);
+    if (audioOn && !tl.paused() && !vo.paused) {
+      if (Math.abs(vo.currentTime - t) > 0.16) vo.currentTime = t;
+    }
+    requestAnimationFrame(frame);
+  })();
+}
+
+const toggle = () => {
+  if (tl.paused() || tl.progress() >= 1) {
+    if (tl.progress() >= 1) tl.progress(0);
+    tl.play();
+    vo.currentTime = tl.time();
+    vo.play().then(() => { audioOn = true; }).catch(() => {});
+    btn.textContent = 'Pause';
+  } else {
+    tl.pause();
+    vo.pause();
+    btn.textContent = 'Play';
+  }
+};
+
+btn.onclick = toggle;
+$('#btn-restart').onclick = () => { startPlayback(); };
+scrub.addEventListener('pointerdown', () => { scrubbing = true; tl.pause(); vo.pause(); btn.textContent = 'Play'; });
+addEventListener('pointerup', () => { scrubbing = false; });
+scrub.addEventListener('input', () => {
+  const t = (scrub.value / 1000) * DURATION;
+  tl.pause();
+  tl.time(t);
+  vo.currentTime = t;
+});
+
+addEventListener('keydown', e => {
+  if (e.code === 'Space') { e.preventDefault(); toggle(); }
+  if (/^[rR]$/.test(e.key)) { startPlayback(); }
+  if (/^[hH]$/.test(e.key)) $('#ui').classList.toggle('on');
+});
+
+if (Q.has('debug')) $('#ui').classList.add('on');
+
+const seek = t => {
+  tl.pause();
+  vo.pause();
+  tl.time(t, false);
+  if (gsap.ticker.tick) gsap.ticker.tick();
+  render(t);
+};
+
+window.OPENER = { W, H, DURATION, tl, seek, ready: false };
+
+document.fonts.ready.then(() => {
+  render(0);
+  window.OPENER.ready = true;
+  if (Q.has('clean')) return;
+  /* Coba autoplay dengan suara; bila diblokir browser, tahan di frame 0 dan mulai pada gestur pertama */
+  vo.play().then(() => {
+    audioOn = true;
+    vo.currentTime = 0;
+    tl.play(0);
+  }).catch(() => {
+    tl.pause(0);
+    render(0);
+    const unlock = () => {
+      removeEventListener('pointerdown', unlock);
+      removeEventListener('keydown', unlock);
+      startPlayback();
+    };
+    addEventListener('pointerdown', unlock);
+    addEventListener('keydown', unlock);
+  });
+});
+</script>
+</body>
+</html>
