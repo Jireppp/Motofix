@@ -1,6 +1,7 @@
 import { supabase } from '../lib/supabase';
 import { UserVehicle, MasterBrand } from '../types';
 import { authService } from './authService';
+import { localizeBrandName } from '../constants/masterData';
 
 export const vehicleService = {
   /** Get all vehicles for the current user (with brand info). */
@@ -34,7 +35,10 @@ export const vehicleService = {
       .order('brand_name');
 
     if (error) throw error;
-    return data || [];
+    return (data || []).map((b: MasterBrand) => ({
+      ...b,
+      brand_name: localizeBrandName(b.brand_name),
+    }));
   },
 
   /** Create a new vehicle. */

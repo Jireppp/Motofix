@@ -52,7 +52,7 @@ export default function AddSparepartScreen({ vehicle, onGoBack, onSuccess }: Add
       const data = await sparepartService.getMasterData();
       
       const grouped = data.reduce((acc: any, item) => {
-        const catName = item.category || 'LAINNYA';
+        const catName = item.category || 'Other';
         if (!acc[catName]) {
           acc[catName] = { category: catName, items: [] };
         }

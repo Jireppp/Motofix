@@ -34,6 +34,7 @@ export default function HelpScreen({ onGoBack }: HelpScreenProps) {
   const [loadingAuth, setLoadingAuth] = useState(false);
   const [deletingData, setDeletingData] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [pendingGoogleToken, setPendingGoogleToken] = useState<string | null>(null);
   const [isGuest, setIsGuest] = useState(true);
   const [userEmail, setUserEmail] = useState<string | null>(null);
   const [reminderEnabled, setReminderEnabled] = useState(true);
@@ -70,16 +71,20 @@ export default function HelpScreen({ onGoBack }: HelpScreenProps) {
   const checkUser = async () => {
     const { data: { session } } = await supabase.auth.getSession();
     if (session?.user) {
-      const isAnon = Boolean(session.user.is_anonymous);
-      const providers = session.user.app_metadata?.providers || [];
-      const hasGoogle = providers.includes('google');
-      
-      if (isAnon || !hasGoogle) {
+      const user: any = session.user;
+      const providers: string[] = user.app_metadata?.providers || [];
+      const hasGoogle =
+        providers.includes('google') ||
+        (user.identities || []).some((i: any) => i.provider === 'google');
+
+      if (!hasGoogle) {
         setIsGuest(true);
         setUserEmail(null);
       } else {
         setIsGuest(false);
-        const googleEmail = session.user.user_metadata?.email || session.user.email;
+        const googleIdentity = (user.identities || []).find((i: any) => i.provider === 'google');
+        const googleEmail =
+          googleIdentity?.identity_data?.email || user.user_metadata?.email || user.email;
         setUserEmail(googleEmail);
       }
     } else {
@@ -92,12 +97,40 @@ export default function HelpScreen({ onGoBack }: HelpScreenProps) {
     haptic.medium();
     setLoadingAuth(true);
     try {
-      const userInfo = await authService.signInWithGoogle();
-      if (userInfo) {
-        setIsGuest(false);
-        haptic.success();
-        checkUser();
+      const result = await authService.signInWithGoogle();
+      if (!result) return;
+
+      if (result.status === 'needs_switch') {
+        setPendingGoogleToken(result.idToken);
+        return;
       }
+
+      haptic.success();
+      await checkUser();
+      toast.success(
+        result.status === 'linked'
+          ? 'Google account connected. Your garage is now backed up.'
+          : 'Signed in with Google.'
+      );
+    } catch (error: any) {
+      haptic.warning();
+      toast.error(error.message || 'Could not sign in with Google');
+    } finally {
+      setLoadingAuth(false);
+    }
+  };
+
+  const confirmSwitchToGoogleAccount = async () => {
+    const token = pendingGoogleToken;
+    setPendingGoogleToken(null);
+    if (!token) return;
+    setLoadingAuth(true);
+    try {
+      await authService.signInWithGoogleToken(token);
+      haptic.success();
+      await checkUser();
+      toast.success('Signed in with Google.');
+      onGoBack();
     } catch (error: any) {
       haptic.warning();
       toast.error(error.message || 'Could not sign in with Google');
@@ -355,6 +388,15 @@ export default function HelpScreen({ onGoBack }: HelpScreenProps) {
         </View>
 
       </ScrollView>
+
+      <ConfirmModal
+        visible={pendingGoogleToken !== null}
+        title="Switch to Google Account?"
+        message="This Google account already has its own FXON garage, so your current guest garage cannot be merged into it. Continue to switch to the Google account? The guest garage on this device will no longer be accessible."
+        confirmLabel="Switch Account"
+        onConfirm={confirmSwitchToGoogleAccount}
+        onCancel={() => setPendingGoogleToken(null)}
+      />
 
       <ConfirmModal
         visible={showDeleteConfirm}

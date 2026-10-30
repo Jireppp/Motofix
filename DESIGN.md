@@ -28,7 +28,7 @@ FXON is a diagnostic dashboard for a motorcycle. Every screen is built from the 
 | Access | `const { colors: COLORS, isDark, mode, setMode } = useTheme()` |
 | Switcher | Sun icon in the Garage header opens "Theme Settings" with *System Match / Light Mode / Dark Mode* |
 | Status bar | `light` content on dark, `dark` content on light |
-| Config | `app.json` sets `userInterfaceStyle: "dark"` for the OS chrome; the in-app theme is controlled by `ThemeContext` |
+| Config | `app.json` sets `userInterfaceStyle: "automatic"` so the OS reports the real light/dark scheme to `useColorScheme()`; the in-app theme is controlled by `ThemeContext` |
 
 Screens must call `useTheme()` and build styles through `getStyles(COLORS)`. Do not import the static `COLORS` constant for rendering, because it is dark-only.
 
@@ -191,6 +191,7 @@ All destructive confirmations use one themed modal that follows 4.3. The native 
 | Delete a vehicle | `GarageScreen` | *Delete Vehicle* | `Delete` |
 | Delete account | `HelpScreen` | *Delete Account & All Data?* | `Delete Permanently` |
 | Wipe guest data | `HelpScreen` | *Wipe Guest Garage Data?* | `Wipe Data` |
+| Switch away from guest garage | `HelpScreen` | *Switch to Google Account?* | `Switch Account` |
 
 Each screen fires `haptic.warning()` when opening the modal and reports the result with a toast.
 

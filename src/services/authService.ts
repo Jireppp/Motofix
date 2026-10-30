@@ -4,6 +4,30 @@ import { GoogleSignin } from '@react-native-google-signin/google-signin';
 const GUEST_EMAIL_KEY = 'fxon_guest_email';
 const LEGACY_GUEST_EMAIL_KEY = 'motofix_guest_email';
 
+export type GoogleSignInResult =
+  | { status: 'linked' }
+  | { status: 'signed_in' }
+  | { status: 'needs_switch'; idToken: string };
+
+/** A guest is an anonymous user, or a legacy device-scoped @cekmotor.app account, without a Google identity. */
+function isGuestUser(user: any): boolean {
+  const hasGoogle =
+    (user.identities || []).some((i: any) => i.provider === 'google') ||
+    (user.app_metadata?.providers || []).includes('google');
+  if (hasGoogle) return false;
+  if (user.is_anonymous) return true;
+  return (user.email || '').endsWith('@cekmotor.app');
+}
+
+/** True when the current (guest) user owns any vehicle. Errs on the side of "yes" so data is never dropped silently. */
+async function guestHasData(): Promise<boolean> {
+  const { count, error } = await supabase
+    .from('user_vehicle')
+    .select('id', { count: 'exact', head: true });
+  if (error) return true;
+  return (count ?? 0) > 0;
+}
+
 export const authService = {
   /** Sign up with email and password. */
   async signUp(email: string, password: string) {
@@ -49,8 +73,16 @@ export const authService = {
     return supabase.auth.onAuthStateChange(callback);
   },
 
-  /** Sign in with Google */
-  async signInWithGoogle() {
+  /**
+   * Sign in with Google.
+   *
+   * When the current session is a guest, the Google identity is LINKED to the guest
+   * account so the guest's vehicles, parts and logs are kept (backup).
+   * If that Google account already belongs to another FXON account, the guest garage
+   * cannot be merged: when the guest has data the caller gets `needs_switch` and must
+   * confirm before calling `signInWithGoogleToken`.
+   */
+  async signInWithGoogle(): Promise<GoogleSignInResult | null> {
     try {
       GoogleSignin.configure({
         webClientId: process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID || '',
@@ -60,37 +92,70 @@ export const authService = {
       const idToken = userInfo.data?.idToken;
       if (!idToken) throw new Error('No ID token received from Google Sign-In');
 
-      const { data, error } = await supabase.auth.signInWithIdToken({
+      const { data: { session } } = await supabase.auth.getSession();
+      const currentUser = session?.user;
+
+      // Not a guest (or no session): plain sign in.
+      if (!currentUser || !isGuestUser(currentUser)) {
+        await this.signInWithGoogleToken(idToken);
+        return { status: 'signed_in' };
+      }
+
+      // Guest: keep their data by linking the Google identity to this account.
+      const { error: linkError } = await supabase.auth.linkIdentity({
         provider: 'google',
         token: idToken,
       });
+      if (!linkError) return { status: 'linked' };
 
-      if (error) throw error;
-      return data;
+      const code = (linkError as any).code as string | undefined;
+      const message = (linkError.message || '').toLowerCase();
+      const alreadyLinked =
+        code === 'identity_already_exists' ||
+        message.includes('already linked') ||
+        message.includes('already exists');
+      const hasData = await guestHasData();
+
+      if (!hasData) {
+        // Nothing to lose, so just sign in to the Google account.
+        await this.signInWithGoogleToken(idToken);
+        return { status: 'signed_in' };
+      }
+
+      if (alreadyLinked) {
+        return { status: 'needs_switch', idToken };
+      }
+
+      // Linking failed for another reason (e.g. manual linking disabled, network).
+      // Never silently drop the guest garage.
+      throw new Error(
+        'Could not back up your guest garage to Google right now. Your data is still safe on this device. Please try again later.'
+      );
     } catch (error: any) {
-      if (error.code === 'SIGN_IN_CANCELLED') {
-        console.log('Google Sign-In cancelled by user');
-        return null;
-      } else if (error.code === 'IN_PROGRESS') {
-        console.log('Google Sign-In already in progress');
+      if (error.code === 'SIGN_IN_CANCELLED' || error.code === 'IN_PROGRESS') {
         return null;
       } else if (error.code === 'PLAY_SERVICES_NOT_AVAILABLE') {
         throw new Error('Google Play Services is not available on this device.');
-      } else {
-        console.error('Google sign in error', error);
-        throw error;
       }
+      throw error;
     }
+  },
+
+  /** Sign in to the Google-backed account with an already obtained Google ID token. */
+  async signInWithGoogleToken(idToken: string) {
+    const { data, error } = await supabase.auth.signInWithIdToken({
+      provider: 'google',
+      token: idToken,
+    });
+    if (error) throw error;
+    return data;
   },
 
   /** Check if the current logged-in user is an anonymous guest. */
   async isAnonymous(): Promise<boolean> {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return true;
-    if (user.is_anonymous) return true;
-    const email = user.email || '';
-    if (email.endsWith('@cekmotor.app')) return true;
-    return false;
+    return isGuestUser(user);
   },
 
   /** Sign in as a guest (native anonymous with automatic device-scoped fallback). */

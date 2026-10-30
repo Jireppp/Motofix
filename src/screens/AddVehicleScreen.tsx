@@ -19,7 +19,7 @@ interface AddVehicleScreenProps {
 }
 
 export default function AddVehicleScreen({ onGoBack, onSuccess }: AddVehicleScreenProps) {
-  const { colors: COLORS } = useTheme();
+  const { colors: COLORS, isDark } = useTheme();
   const styles = getStyles(COLORS);
 
   const [brands, setBrands] = useState<MasterBrand[]>([]);
@@ -104,7 +104,7 @@ export default function AddVehicleScreen({ onGoBack, onSuccess }: AddVehicleScre
             <TouchableOpacity style={styles.inputMinimal} onPress={() => setShowBrandPicker(true)}>
               {selectedBrand ? (
                 <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                  <Image source={getBrandImage(selectedBrand.image_url, true)} style={{ width: 20, height: 20, marginRight: 12 }} resizeMode="contain" />
+                  <Image source={getBrandImage(selectedBrand.image_url, isDark)} style={{ width: 20, height: 20, marginRight: 12 }} resizeMode="contain" />
                   <Text style={{ color: COLORS.textPrimary, fontFamily: FONT_FAMILY.mono, fontSize: 16 }}>{selectedBrand.brand_name.toUpperCase()}</Text>
                 </View>
               ) : (
@@ -196,7 +196,7 @@ export default function AddVehicleScreen({ onGoBack, onSuccess }: AddVehicleScre
                   style={styles.pickerRow}
                   onPress={() => { setSelectedBrand(item); setShowBrandPicker(false); setBrandSearch(''); }}
                 >
-                  <Image source={getBrandImage(item.image_url, true)} style={{ width: 16, height: 16, marginRight: 12 }} resizeMode="contain" />
+                  <Image source={getBrandImage(item.image_url, isDark)} style={{ width: 16, height: 16, marginRight: 12 }} resizeMode="contain" />
                   <Text style={styles.pickerRowText}>{item.brand_name.toUpperCase()}</Text>
                 </TouchableOpacity>
               )} />

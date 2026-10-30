@@ -32,7 +32,7 @@ export default function GarageScreen({
   onVehicleDeleted,
   refreshKey,
 }: GarageScreenProps) {
-  const { colors: COLORS, mode, setMode } = useTheme();
+  const { colors: COLORS, isDark, mode, setMode } = useTheme();
   const styles = getStyles(COLORS);
 
   const [vehicles, setVehicles] = useState<UserVehicle[]>([]);
@@ -166,7 +166,7 @@ export default function GarageScreen({
       >
         <View style={styles.irBrandCol}>
           <Image
-            source={getBrandImage(item.master_brand?.image_url || 'default', true)}
+            source={getBrandImage(item.master_brand?.image_url || 'default', isDark)}
             style={styles.irBrandImg}
             resizeMode="contain"
           />
@@ -303,7 +303,7 @@ export default function GarageScreen({
               <TouchableOpacity style={styles.inputMinimal} onPress={() => setShowBrandPicker(true)}>
                 {selectedBrand ? (
                   <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                    <Image source={getBrandImage(selectedBrand.image_url, true)} style={{ width: 16, height: 16, marginRight: 8 }} resizeMode="contain" />
+                    <Image source={getBrandImage(selectedBrand.image_url, isDark)} style={{ width: 16, height: 16, marginRight: 8 }} resizeMode="contain" />
                     <Text style={{ color: COLORS.textPrimary, fontFamily: FONT_FAMILY.mono }}>{selectedBrand.brand_name.toUpperCase()}</Text>
                   </View>
                 ) : (
@@ -353,7 +353,7 @@ export default function GarageScreen({
                 style={styles.pickerRow}
                 onPress={() => { setEditBrandId(item.id); setShowBrandPicker(false); }}
               >
-                <Image source={getBrandImage(item.image_url, true)} style={{ width: 16, height: 16, marginRight: 12 }} resizeMode="contain" />
+                <Image source={getBrandImage(item.image_url, isDark)} style={{ width: 16, height: 16, marginRight: 12 }} resizeMode="contain" />
                 <Text style={styles.pickerRowText}>{item.brand_name.toUpperCase()}</Text>
               </TouchableOpacity>
             )} />

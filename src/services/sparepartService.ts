@@ -2,9 +2,14 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { supabase } from '../lib/supabase';
 import { MasterData, VehicleSparepart, SparepartWithDetails } from '../types';
 import { calculateRemainingKm, getStatus } from '../utils/kmCalculator';
+import { localizeSparepartName, localizeCategory } from '../constants/masterData';
 
+/** Name of the shared catalog row that every user-defined (custom) part points to. */
+export const CUSTOM_CATALOG_NAME = 'Custom Component';
+
+// Legacy: before `custom_name` existed in the database, custom names were kept on the device only.
+// It is still read so parts created by older app versions keep their names.
 const CUSTOM_NAMES_STORAGE_KEY = 'fxon_custom_sparepart_names';
-const USER_CUSTOM_MASTER_IDS_PREFIX = 'fxon_user_custom_master_ids_';
 
 async function getCustomNamesMap(): Promise<Record<string, string>> {
   try {
@@ -15,45 +20,10 @@ async function getCustomNamesMap(): Promise<Record<string, string>> {
   }
 }
 
-async function saveCustomNameForRow(sparepartId: string, customName: string): Promise<void> {
-  try {
-    const map = await getCustomNamesMap();
-    map[sparepartId] = customName;
-    await AsyncStorage.setItem(CUSTOM_NAMES_STORAGE_KEY, JSON.stringify(map));
-  } catch {
-    // Ignore storage write errors
-  }
-}
-
-async function getUserPrivateMasterIds(userId: string): Promise<string[]> {
-  try {
-    const raw = await AsyncStorage.getItem(`${USER_CUSTOM_MASTER_IDS_PREFIX}${userId}`);
-    return raw ? JSON.parse(raw) : [];
-  } catch {
-    return [];
-  }
-}
-
-async function addUserPrivateMasterId(userId: string, masterId: string): Promise<void> {
-  try {
-    const existing = await getUserPrivateMasterIds(userId);
-    if (!existing.includes(masterId)) {
-      existing.push(masterId);
-      await AsyncStorage.setItem(
-        `${USER_CUSTOM_MASTER_IDS_PREFIX}${userId}`,
-        JSON.stringify(existing)
-      );
-    }
-  } catch {
-    // Ignore storage write errors
-  }
-}
-
 export const sparepartService = {
   /**
-   * Fetch master data catalog.
-   * Isolates custom entries ('Lainnya') so a user only sees official factory catalog items
-   * plus their own private custom components (never polluted by other users' custom parts).
+   * Fetch the official master catalog (English display names).
+   * The shared "Custom Component" row is internal and never shown in the picker.
    */
   async getMasterData(): Promise<MasterData[]> {
     const { data, error } = await supabase
@@ -63,21 +33,14 @@ export const sparepartService = {
 
     if (error) throw error;
 
-    const { data: authData } = await supabase.auth.getUser();
-    const userId = authData?.user?.id;
-    const privateIds = userId ? await getUserPrivateMasterIds(userId) : [];
-
-    return (data || []).filter((item: any) => {
-      // If the database table has user_id column populated
-      if (item.user_id) {
-        return item.user_id === userId;
-      }
-      // Keep all official factory categories; only show 'Lainnya' if created by this user
-      const isCustomCategory =
-        !item.category || item.category.toLowerCase() === 'lainnya';
-      if (!isCustomCategory) return true;
-      return privateIds.includes(item.id);
-    });
+    return (data || [])
+      .filter((item: any) => item.sparepart_name !== CUSTOM_CATALOG_NAME)
+      .map((item: any) => ({
+        ...item,
+        sparepart_name: localizeSparepartName(item.sparepart_name),
+        category: localizeCategory(item.category),
+      }))
+      .sort((a: MasterData, b: MasterData) => a.sparepart_name.localeCompare(b.sparepart_name));
   },
 
   /** Fetch all tracked spareparts for a vehicle with pure odometer-driven telemetry fields. */
@@ -101,7 +64,7 @@ export const sparepartService = {
         const resolvedName =
           item.custom_name ||
           customNamesMap[item.id] ||
-          item.master_data?.sparepart_name ||
+          localizeSparepartName(item.master_data?.sparepart_name) ||
           'Custom Part';
 
         return {
@@ -145,9 +108,11 @@ export const sparepartService = {
   },
 
   /**
-   * Add a custom sparepart scoped to the vehicle/user.
-   * Stores `custom_name` directly on `vehicle_sparepart` (if column exists in DB)
-   * and binds private ownership so global catalog is never polluted for other users.
+   * Add a user-defined (custom) sparepart for a vehicle.
+   *
+   * Requires the `custom_spareparts.sql` migration: one shared "Custom Component" row in
+   * `master_data`, a `custom_name` column on `vehicle_sparepart`, and per-vehicle uniqueness
+   * scoped by `(vehicle_id, lower(custom_name))` for custom rows.
    */
   async addCustomSparepart(
     vehicleId: string,
@@ -156,64 +121,24 @@ export const sparepartService = {
     currentKm: number
   ): Promise<VehicleSparepart> {
     const cleanName = sparepartName.trim();
-    const { data: authData } = await supabase.auth.getUser();
-    const userId = authData?.user?.id;
 
-    // 1. Resolve or create a backing master_data reference (for FK integrity)
-    let masterId: string | undefined;
-
-    const { data: masterEntry, error: masterError } = await supabase
+    const { data: customCatalog } = await supabase
       .from('master_data')
-      .insert({
-        sparepart_name: cleanName,
-        default_interval: customInterval,
-        category: 'Lainnya',
-        icon_name: 'default',
-      })
-      .select()
-      .single();
+      .select('id')
+      .eq('sparepart_name', CUSTOM_CATALOG_NAME)
+      .maybeSingle();
 
-    if (!masterError && masterEntry?.id) {
-      masterId = masterEntry.id;
-    } else if (masterError?.code === '23505') {
-      const { data: existing } = await supabase
-        .from('master_data')
-        .select('id')
-        .ilike('sparepart_name', cleanName)
-        .limit(1)
-        .single();
-
-      if (existing?.id) {
-        masterId = existing.id;
-      }
+    if (!customCatalog?.id) {
+      throw new Error(
+        'Custom components are not set up on the server yet. Please run supabase/custom_spareparts.sql in Supabase.'
+      );
     }
 
-    // Fallback: if RLS blocks master_data insert, bind to any existing base catalog ID
-    // and override the name directly on the vehicle_sparepart row.
-    if (!masterId) {
-      const { data: fallbackMaster } = await supabase
-        .from('master_data')
-        .select('id')
-        .limit(1)
-        .single();
-      masterId = fallbackMaster?.id;
-    }
-
-    if (!masterId) {
-      throw new Error('Failed to resolve component catalog record.');
-    }
-
-    if (userId) {
-      await addUserPrivateMasterId(userId, masterId);
-    }
-
-    // 2. Try inserting with `custom_name` directly on `vehicle_sparepart`
-    let insertedRow: any = null;
-    const { data: directData, error: directError } = await supabase
+    const { data, error } = await supabase
       .from('vehicle_sparepart')
       .insert({
         vehicle_id: vehicleId,
-        master_data_id: masterId,
+        master_data_id: customCatalog.id,
         custom_name: cleanName,
         custom_interval: customInterval,
         km_at_setup: currentKm,
@@ -222,36 +147,19 @@ export const sparepartService = {
       .select()
       .single();
 
-    if (!directError && directData) {
-      insertedRow = directData;
-    } else {
-      // Fallback if `custom_name` column is not yet added in remote Supabase table
-      const { data: fallbackData, error: fallbackError } = await supabase
-        .from('vehicle_sparepart')
-        .insert({
-          vehicle_id: vehicleId,
-          master_data_id: masterId,
-          custom_interval: customInterval,
-          km_at_setup: currentKm,
-          status: 'Normal',
-        })
-        .select()
-        .single();
-
-      if (fallbackError) {
-        if (fallbackError.code === '23505') {
-          throw new Error('This component is already tracked for this vehicle.');
-        }
-        throw fallbackError;
+    if (error) {
+      if (error.code === '23505') {
+        throw new Error('This component is already tracked for this vehicle.');
       }
-      insertedRow = fallbackData;
+      if (error.code === '42703' || (error.message || '').includes('custom_name')) {
+        throw new Error(
+          'Custom components are not set up on the server yet. Please run supabase/custom_spareparts.sql in Supabase.'
+        );
+      }
+      throw error;
     }
 
-    if (insertedRow?.id) {
-      await saveCustomNameForRow(insertedRow.id, cleanName);
-    }
-
-    return insertedRow;
+    return data;
   },
 
   /** Mark a sparepart as replaced. Resets cycle and logs replacement with current server KM. */
@@ -384,7 +292,7 @@ export const sparepartService = {
       nameMap[sp.id] =
         sp.custom_name ||
         customNamesMap[sp.id] ||
-        sp.master_data?.sparepart_name ||
+        localizeSparepartName(sp.master_data?.sparepart_name) ||
         'Unknown';
     });
 
